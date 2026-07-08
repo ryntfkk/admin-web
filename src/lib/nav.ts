@@ -27,6 +27,6 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Pengguna', href: '/dashboard/users', icon: Users, ready: true },
   { label: 'Promo', href: '/dashboard/promos', icon: Ticket, ready: true },
   { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, ready: true },
-  { label: 'Transaksi', href: '/dashboard/transactions', icon: Receipt, ready: false },
-  { label: 'Kategori', href: '/dashboard/categories', icon: LayoutGrid, ready: false },
+  { label: 'Transaksi', href: '/dashboard/transactions', icon: Receipt, ready: true },
+  { label: 'Kategori', href: '/dashboard/categories', icon: LayoutGrid, ready: true },
 ];

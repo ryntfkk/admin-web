@@ -125,7 +125,63 @@ export interface AuditLog {
   created_at: string;
 }
 
+// ── Orders / Transactions ───────────────────────────────────────────
+export interface OrderRow {
+  id: string;
+  order_number: string;
+  status: string;
+  agreed_price: number;
+  created_at: string;
+  scheduled_at: string;
+  customer_name: string;
+  partner_name: string;
+}
+
+export interface OrderDetailRow {
+  id: string;
+  order_number: string;
+  status: string;
+  agreed_price: number;
+  total_service_price: number;
+  transport_fee: number;
+  admin_fee_customer: number;
+  discount_amount: number;
+  scheduled_at: string;
+  address: string;
+  notes: NullString;
+  created_at: string;
+  completed_at: NullTime;
+  cancellation_reason: NullString;
+  customer_id: string;
+  customer_name: string;
+  customer_phone: NullString;
+  partner_id: string;
+  partner_name: string;
+  partner_phone: NullString;
+}
+
+// ── Categories ──────────────────────────────────────────────────────
+export interface Category {
+  id: string;
+  name: string;
+  icon_url: NullString;
+  is_active: boolean;
+}
+
 // ── Users ───────────────────────────────────────────────────────────
+export interface UserRow {
+  id: string;
+  username: string;
+  name: string;
+  phone: NullString;
+  email: NullString;
+  active_role: string;
+  is_suspended: boolean;
+  is_verified: boolean;
+  balance: number;
+  created_at: string;
+}
+
 export interface UserDetailRow {
   id: string;
   name: string;

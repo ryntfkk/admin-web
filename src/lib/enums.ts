@@ -46,3 +46,58 @@ export const PROMO_DISCOUNT_OPTIONS = [
   { value: 'percentage', label: 'Persentase (%)' },
   { value: 'fixed', label: 'Nominal (Rp)' },
 ];
+
+// ── Orders ──────────────────────────────────────────────────────────
+export const ORDER_STATUS_OPTIONS = [
+  { value: '', label: 'Semua status' },
+  { value: 'WAITING_CONFIRMATION', label: 'Menunggu konfirmasi' },
+  { value: 'WAITING_PAYMENT', label: 'Menunggu pembayaran' },
+  { value: 'PAID', label: 'Dibayar' },
+  { value: 'IN_PROGRESS', label: 'Dikerjakan' },
+  { value: 'WAITING_ADDITIONAL_PAY', label: 'Menunggu bayar tambahan' },
+  { value: 'WAITING_CUSTOMER_CONFIRM', label: 'Menunggu konfirmasi pelanggan' },
+  { value: 'COMPLETED', label: 'Selesai' },
+  { value: 'CANCELLED', label: 'Dibatalkan' },
+  { value: 'DISPUTED', label: 'Sengketa' },
+];
+
+export const ORDER_STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  ORDER_STATUS_OPTIONS.filter((o) => o.value).map((o) => [o.value, o.label]),
+);
+
+export function orderStatusVariant(
+  status: string,
+): 'warning' | 'info' | 'success' | 'danger' | 'neutral' {
+  switch (status) {
+    case 'COMPLETED':
+      return 'success';
+    case 'CANCELLED':
+      return 'neutral';
+    case 'DISPUTED':
+      return 'danger';
+    case 'IN_PROGRESS':
+    case 'PAID':
+      return 'info';
+    case 'WAITING_CONFIRMATION':
+    case 'WAITING_PAYMENT':
+    case 'WAITING_ADDITIONAL_PAY':
+    case 'WAITING_CUSTOMER_CONFIRM':
+      return 'warning';
+    default:
+      return 'neutral';
+  }
+}
+
+// ── Users ───────────────────────────────────────────────────────────
+export const USER_ROLE_OPTIONS = [
+  { value: '', label: 'Semua role' },
+  { value: 'customer', label: 'Pelanggan' },
+  { value: 'partner', label: 'Mitra' },
+  { value: 'admin', label: 'Admin' },
+];
+
+export const USER_STATUS_OPTIONS = [
+  { value: '', label: 'Semua status' },
+  { value: 'active', label: 'Aktif' },
+  { value: 'suspended', label: 'Suspended' },
+];
