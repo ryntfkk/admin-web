@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Topbar />
         <main className="flex-1 overflow-y-auto bg-muted/30 p-5">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }
