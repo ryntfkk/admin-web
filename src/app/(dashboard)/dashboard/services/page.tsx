@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Eye, EyeOff, Trash2, ImageIcon } from 'lucide-react';
+import { Search, Eye, EyeOff, Trash2, ImageIcon, Pencil, Plus, Star, X, Upload } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { ServiceRow } from '@/types/admin';
+import type { ServiceRow, ServiceDetail, ServicePhoto } from '@/types/admin';
 import { nstr } from '@/lib/sql';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
@@ -29,6 +29,7 @@ export default function ServicesPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [toDelete, setToDelete] = useState<ServiceRow | null>(null);
+  const [toEdit, setToEdit] = useState<ServiceRow | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['services', status, search, page],
@@ -163,6 +164,14 @@ export default function ServicesPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setToEdit(s)}
+                      >
+                        <Pencil className="size-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={setActive.isPending}
                         onClick={() => setActive.mutate({ id: s.id, isActive: !s.is_active })}
                       >
@@ -223,6 +232,315 @@ export default function ServicesPage() {
           </div>
         </Modal>
       )}
+
+      {toEdit && (
+        <ServiceEditor
+          service={toEdit}
+          onClose={() => setToEdit(null)}
+          onSaved={() => {
+            setToEdit(null);
+            qc.invalidateQueries({ queryKey: ['services'] });
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+function ServiceEditor({
+  service,
+  onClose,
+  onSaved,
+}: {
+  service: ServiceRow;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const qc = useQueryClient();
+  const [name, setName] = useState(service.name);
+  const [description, setDescription] = useState(nstr(service.description) ?? '');
+  const [price, setPrice] = useState(service.price.toString());
+  const [estimatedDuration, setEstimatedDuration] = useState(service.estimated_duration.toString());
+  const [isActive, setIsActive] = useState(service.is_active);
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+
+  // Fetch service detail with photos
+  const { data: detail, isLoading: detailLoading } = useQuery({
+    queryKey: ['service-detail', service.id],
+    queryFn: async () => {
+      const res = await fetchAPI<ServiceDetail>(`/admin/services/${service.id}`);
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const priceNum = parseInt(price, 10);
+      const durationNum = parseInt(estimatedDuration, 10);
+
+      if (isNaN(priceNum) || priceNum < 0) {
+        throw new Error('Harga harus angka positif');
+      }
+      if (isNaN(durationNum) || durationNum <= 0) {
+        throw new Error('Durasi estimasi harus angka positif');
+      }
+
+      const res = await fetchAPI(`/admin/services/${service.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || null,
+          price: priceNum,
+          estimated_duration: durationNum,
+          is_active: isActive,
+        }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Layanan berhasil diperbarui');
+      onSaved();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const addPhoto = useMutation({
+    mutationFn: async (url: string) => {
+      const res = await fetchAPI(`/admin/services/${service.id}/photos`, {
+        method: 'POST',
+        body: JSON.stringify({
+          photo_url: url,
+          is_primary: !detail?.photos?.length,
+        }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Foto ditambahkan');
+      setNewPhotoUrl('');
+      qc.invalidateQueries({ queryKey: ['service-detail', service.id] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deletePhoto = useMutation({
+    mutationFn: async (photoId: string) => {
+      const res = await fetchAPI(`/admin/services/${service.id}/photos/${photoId}`, {
+        method: 'DELETE',
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Foto dihapus');
+      qc.invalidateQueries({ queryKey: ['service-detail', service.id] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const setPrimaryPhoto = useMutation({
+    mutationFn: async (photoId: string) => {
+      const res = await fetchAPI(`/admin/services/${service.id}/photos/${photoId}/primary`, {
+        method: 'PUT',
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Foto utama diperbarui');
+      qc.invalidateQueries({ queryKey: ['service-detail', service.id] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const priceNum = parseInt(price, 10);
+  const durationNum = parseInt(estimatedDuration, 10);
+  const isValid =
+    name.trim().length > 0 &&
+    !isNaN(priceNum) &&
+    priceNum >= 0 &&
+    !isNaN(durationNum) &&
+    durationNum > 0;
+
+  const photos = detail?.photos ?? [];
+
+  return (
+    <Modal open onClose={onClose} title="Edit Layanan" className="max-w-2xl">
+      <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
+        {/* Mitra info (read-only) */}
+        <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+          <p className="text-xs text-muted-foreground">Mitra</p>
+          <p className="font-medium">{service.partner_name}</p>
+        </div>
+
+        {/* Nama */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Nama Layanan</label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Contoh: Cuci AC Standar"
+          />
+        </div>
+
+        {/* Deskripsi */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Deskripsi</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Jelaskan layanan yang diberikan…"
+            rows={3}
+            className="flex min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
+
+        {/* Harga & Durasi */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Harga (Rp)</label>
+            <Input
+              type="number"
+              min="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="150000"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Durasi (menit)</label>
+            <Input
+              type="number"
+              min="1"
+              value={estimatedDuration}
+              onChange={(e) => setEstimatedDuration(e.target.value)}
+              placeholder="60"
+            />
+          </div>
+        </div>
+
+        {/* Status aktif */}
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+            className="size-4 rounded border-input"
+          />
+          Aktif (tampil di aplikasi publik)
+        </label>
+
+        {/* Info kategori (read-only) */}
+        <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+          <p className="text-xs text-muted-foreground">Kategori</p>
+          <p className="font-medium">{service.category_name}</p>
+        </div>
+
+        {/* Photos Section */}
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Foto Layanan</label>
+            <span className="text-xs text-muted-foreground">{photos.length} foto</span>
+          </div>
+
+          {detailLoading ? (
+            <div className="flex justify-center py-4">
+              <CenteredSpinner />
+            </div>
+          ) : (
+            <>
+              {/* Photo grid */}
+              {photos.length > 0 ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {photos.map((photo: ServicePhoto) => (
+                    <div key={photo.id} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.photo_url}
+                        alt="Service photo"
+                        className="h-24 w-full rounded-lg object-cover border border-border"
+                      />
+                      {/* Primary badge */}
+                      {photo.is_primary && (
+                        <div className="absolute left-1 top-1 rounded bg-yellow-500 px-1.5 py-0.5 text-xs font-medium text-white flex items-center gap-0.5">
+                          <Star className="size-2.5" />
+                          Utama
+                        </div>
+                      )}
+                      {/* Actions overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center gap-1 rounded-lg bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!photo.is_primary && (
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryPhoto.mutate(photo.id)}
+                            className="rounded bg-white/20 p-1.5 text-white hover:bg-white/30"
+                            title="Jadikan foto utama"
+                          >
+                            <Star className="size-3.5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => deletePhoto.mutate(photo.id)}
+                          className="rounded bg-red-500/80 p-1.5 text-white hover:bg-red-500"
+                          title="Hapus foto"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+                  Belum ada foto
+                </div>
+              )}
+
+              {/* Add photo form */}
+              <div className="flex gap-2">
+                <Input
+                  value={newPhotoUrl}
+                  onChange={(e) => setNewPhotoUrl(e.target.value)}
+                  placeholder="https://... (URL foto)"
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!newPhotoUrl.trim() || addPhoto.isPending}
+                  onClick={() => {
+                    if (newPhotoUrl.trim()) {
+                      addPhoto.mutate(newPhotoUrl.trim());
+                    }
+                  }}
+                >
+                  <Plus className="size-4" />
+                  Tambah
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Masukkan URL foto yang sudah diupload ke cloud storage (S3, Cloudinary, dll)
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <Button variant="ghost" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            disabled={!isValid || save.isPending}
+            onClick={() => save.mutate()}
+          >
+            Simpan Perubahan
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }

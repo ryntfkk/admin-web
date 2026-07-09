@@ -176,6 +176,17 @@ export interface ServiceRow {
   created_at: string;
 }
 
+export interface ServicePhoto {
+  id: string;
+  photo_url: string;
+  is_primary: boolean;
+  sort_order: number;
+}
+
+export interface ServiceDetail extends ServiceRow {
+  photos: ServicePhoto[];
+}
+
 // ── Categories ──────────────────────────────────────────────────────
 export interface Category {
   id: string;
