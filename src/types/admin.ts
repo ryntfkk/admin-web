@@ -160,6 +160,22 @@ export interface OrderDetailRow {
   partner_phone: NullString;
 }
 
+// ── Partner services (products) ─────────────────────────────────────
+export interface ServiceRow {
+  id: string;
+  partner_id: string;
+  partner_name: string;
+  category_id: string;
+  category_name: string;
+  name: string;
+  description: NullString;
+  price: number;
+  estimated_duration: number;
+  is_active: boolean;
+  photo_count: number;
+  created_at: string;
+}
+
 // ── Categories ──────────────────────────────────────────────────────
 export interface Category {
   id: string;

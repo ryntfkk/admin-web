@@ -8,6 +8,7 @@ import {
   Receipt,
   LayoutGrid,
   ScrollText,
+  Package,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, ready: true },
   { label: 'Verifikasi Mitra', href: '/dashboard/partners', icon: BadgeCheck, ready: true },
+  { label: 'Produk Jasa', href: '/dashboard/services', icon: Package, ready: true },
   { label: 'Sengketa', href: '/dashboard/disputes', icon: Scale, ready: true },
   { label: 'Withdrawal', href: '/dashboard/withdrawals', icon: Banknote, ready: true },
   { label: 'Pengguna', href: '/dashboard/users', icon: Users, ready: true },

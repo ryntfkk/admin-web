@@ -88,6 +88,13 @@ export function orderStatusVariant(
   }
 }
 
+// ── Services ────────────────────────────────────────────────────────
+export const SERVICE_STATUS_OPTIONS = [
+  { value: '', label: 'Semua status' },
+  { value: 'active', label: 'Aktif' },
+  { value: 'inactive', label: 'Nonaktif' },
+];
+
 // ── Users ───────────────────────────────────────────────────────────
 export const USER_ROLE_OPTIONS = [
   { value: '', label: 'Semua role' },
