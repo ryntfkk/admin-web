@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, ShieldBan, ShieldCheck, Cog } from 'lucide-react';
+import { Search, ShieldBan, ShieldCheck, Cog, Camera } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/modal';
 import { Pagination } from '@/components/ui/pagination';
 import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { FileUpload, uploadFileToStorage } from '@/components/ui/file-upload';
 
 const PER_PAGE = 20;
 
@@ -131,6 +132,7 @@ export default function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Avatar</TableHead>
                 <TableHead>Nama</TableHead>
                 <TableHead>Kontak</TableHead>
                 <TableHead>Role</TableHead>
@@ -142,6 +144,20 @@ export default function UsersPage() {
             <TableBody>
               {rows.map((u) => (
                 <TableRow key={u.id}>
+                  <TableCell>
+                    {nstr(u.avatar_url) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={nstr(u.avatar_url)!}
+                        alt={u.name}
+                        className="size-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex size-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                        {u.name?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{u.name}</div>
                     <div className="text-xs text-muted-foreground">@{u.username}</div>
@@ -195,10 +211,12 @@ function UserDetailModal({
   onChanged: () => void;
 }) {
   const qc = useQueryClient();
-  const [mode, setMode] = useState<'view' | 'suspend' | 'unsuspend'>('view');
+  const [mode, setMode] = useState<'view' | 'suspend' | 'unsuspend' | 'changePhoto'>('view');
   const [duration, setDuration] = useState('24');
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['user-detail', userId],
@@ -213,6 +231,34 @@ function UserDetailModal({
     qc.invalidateQueries({ queryKey: ['users'] });
     qc.invalidateQueries({ queryKey: ['user-detail', userId] });
   }
+
+  const changePhoto = useMutation({
+    mutationFn: async () => {
+      if (!selectedFile) {
+        throw new Error('Pilih file foto terlebih dahulu');
+      }
+
+      // Upload the file first
+      const uploadedUrl = await uploadFileToStorage(selectedFile, 'avatar');
+      if (!uploadedUrl) {
+        throw new Error('Gagal mengupload foto');
+      }
+
+      // Update user profile
+      const res = await fetchAPI(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ avatar_url: uploadedUrl }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Foto profil berhasil diperbarui');
+      setSelectedFile(null);
+      setMode('view');
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const suspend = useMutation({
     mutationFn: async () => {
@@ -294,20 +340,87 @@ function UserDetailModal({
             </Button>
           </div>
         </div>
+      ) : mode === 'changePhoto' ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Upload foto profil baru untuk {data.name}</p>
+          <FileUpload
+            fileType="avatar"
+            currentUrl={avatarUrl || nstr(data.avatar_url) || undefined}
+            onFileSelect={(file) => {
+              setSelectedFile(file);
+              setAvatarUrl(null);
+            }}
+            onUploaded={(url) => {
+              setAvatarUrl(url);
+            }}
+            previewWidth={120}
+            previewHeight={120}
+            label="Foto Profil"
+          />
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button variant="ghost" onClick={() => {
+              setMode('view');
+              setSelectedFile(null);
+              setAvatarUrl(null);
+            }}>
+              Batal
+            </Button>
+            <Button
+              disabled={!selectedFile || changePhoto.isPending}
+              onClick={() => changePhoto.mutate()}
+            >
+              {changePhoto.isPending ? 'Mengupload...' : 'Simpan'}
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">{data.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {nstr(data.email) || nstr(data.phone) || '-'}
-              </p>
+            <div className="flex items-center gap-4">
+              {/* Avatar */}
+              <div className="relative">
+                {nstr(data.avatar_url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={nstr(data.avatar_url)!}
+                    alt={data.name}
+                    className="size-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-16 items-center justify-center rounded-full bg-muted text-lg font-medium">
+                    {data.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="font-medium">{data.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {nstr(data.email) || nstr(data.phone) || '-'}
+                </p>
+              </div>
             </div>
-            {data.is_suspended ? (
-              <Badge variant="danger">Suspended</Badge>
-            ) : (
-              <Badge variant="success">Aktif</Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {data.is_suspended ? (
+                <Badge variant="danger">Suspended</Badge>
+              ) : (
+                <Badge variant="success">Aktif</Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setAvatarUrl(nstr(data.avatar_url));
+                setSelectedFile(null);
+                setMode('changePhoto');
+              }}
+            >
+              <Camera className="size-4" />
+              Ganti Foto
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm">

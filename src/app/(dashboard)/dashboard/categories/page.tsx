@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { FileUpload } from '@/components/ui/file-upload';
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
@@ -126,11 +127,25 @@ function CategoryEditor({
   const isEdit = !!cat;
   const [name, setName] = useState(cat?.name ?? '');
   const [iconUrl, setIconUrl] = useState(cat ? nstr(cat.icon_url) ?? '' : '');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(cat?.is_active ?? true);
 
   const save = useMutation({
     mutationFn: async () => {
-      const body = { name, icon_url: iconUrl, is_active: isActive };
+      let finalIconUrl = iconUrl;
+
+      // If a new file is selected, upload it first
+      if (selectedFile) {
+        const { uploadFileToStorage } = await import('@/components/ui/file-upload');
+        const uploadedUrl = await uploadFileToStorage(selectedFile, 'category_icon');
+        if (uploadedUrl) {
+          finalIconUrl = uploadedUrl;
+        } else {
+          throw new Error('Gagal mengupload ikon');
+        }
+      }
+
+      const body = { name, icon_url: finalIconUrl || null, is_active: isActive };
       const res = isEdit
         ? await fetchAPI(`/admin/categories/${cat!.id}`, {
             method: 'PUT',
@@ -148,18 +163,33 @@ function CategoryEditor({
 
   return (
     <Modal open onClose={onClose} title={isEdit ? 'Edit Kategori' : 'Tambah Kategori'}>
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex flex-col gap-1.5">
           <Label>Nama</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kebersihan" />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>URL Ikon</Label>
-          <Input
-            value={iconUrl}
-            onChange={(e) => setIconUrl(e.target.value)}
-            placeholder="https://…"
-          />
+          <Label>Ikon Kategori</Label>
+          <div className="flex items-center gap-4">
+            <FileUpload
+              fileType="category_icon"
+              currentUrl={iconUrl || undefined}
+              onFileSelect={(file) => setSelectedFile(file)}
+              onUploaded={(url) => setIconUrl(url)}
+              previewWidth={80}
+              previewHeight={80}
+              optional={true}
+            />
+            <div className="text-xs text-muted-foreground">
+              {iconUrl ? (
+                <p className="max-w-48 truncate">{iconUrl}</p>
+              ) : selectedFile ? (
+                <p>{selectedFile.name}</p>
+              ) : (
+                <p>Upload file atau biarkan kosong</p>
+              )}
+            </div>
+          </div>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -175,7 +205,7 @@ function CategoryEditor({
             Batal
           </Button>
           <Button disabled={!name.trim() || save.isPending} onClick={() => save.mutate()}>
-            {isEdit ? 'Simpan' : 'Tambah'}
+            {save.isPending ? 'Menyimpan...' : isEdit ? 'Simpan' : 'Tambah'}
           </Button>
         </div>
       </div>

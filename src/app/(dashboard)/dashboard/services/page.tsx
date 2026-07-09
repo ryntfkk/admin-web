@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, Eye, EyeOff, Trash2, ImageIcon, Pencil, Plus, Star, X, Upload } from 'lucide-react';
+import { Search, Eye, EyeOff, Trash2, ImageIcon, Pencil, Plus, Star, X } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
+import { FileUpload, uploadFileToStorage } from '@/components/ui/file-upload';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
 import type { ServiceRow, ServiceDetail, ServicePhoto } from '@/types/admin';
@@ -262,7 +263,8 @@ function ServiceEditor({
   const [price, setPrice] = useState(service.price.toString());
   const [estimatedDuration, setEstimatedDuration] = useState(service.estimated_duration.toString());
   const [isActive, setIsActive] = useState(service.is_active);
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
+  const [isAddingPhoto, setIsAddingPhoto] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Fetch service detail with photos
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -306,7 +308,20 @@ function ServiceEditor({
   });
 
   const addPhoto = useMutation({
-    mutationFn: async (url: string) => {
+    mutationFn: async () => {
+      let url: string;
+
+      if (selectedFile) {
+        // Upload file first
+        const uploadedUrl = await uploadFileToStorage(selectedFile, 'service_photo');
+        if (!uploadedUrl) {
+          throw new Error('Gagal mengupload foto');
+        }
+        url = uploadedUrl;
+      } else {
+        throw new Error('Pilih file foto terlebih dahulu');
+      }
+
       const res = await fetchAPI(`/admin/services/${service.id}/photos`, {
         method: 'POST',
         body: JSON.stringify({
@@ -318,7 +333,8 @@ function ServiceEditor({
     },
     onSuccess: () => {
       toast.success('Foto ditambahkan');
-      setNewPhotoUrl('');
+      setSelectedFile(null);
+      setIsAddingPhoto(false);
       qc.invalidateQueries({ queryKey: ['service-detail', service.id] });
       qc.invalidateQueries({ queryKey: ['services'] });
     },
@@ -500,30 +516,46 @@ function ServiceEditor({
               )}
 
               {/* Add photo form */}
-              <div className="flex gap-2">
-                <Input
-                  value={newPhotoUrl}
-                  onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  placeholder="https://... (URL foto)"
-                  className="flex-1"
-                />
+              {!isAddingPhoto ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!newPhotoUrl.trim() || addPhoto.isPending}
-                  onClick={() => {
-                    if (newPhotoUrl.trim()) {
-                      addPhoto.mutate(newPhotoUrl.trim());
-                    }
-                  }}
+                  onClick={() => setIsAddingPhoto(true)}
                 >
                   <Plus className="size-4" />
-                  Tambah
+                  Tambah Foto
                 </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Masukkan URL foto yang sudah diupload ke cloud storage (S3, Cloudinary, dll)
-              </p>
+              ) : (
+                <div className="flex gap-4 items-start">
+                  <FileUpload
+                    fileType="service_photo"
+                    maxSizeMB={10}
+                    onFileSelect={(file) => setSelectedFile(file)}
+                    previewWidth={80}
+                    previewHeight={80}
+                    label="Pilih File"
+                  />
+                  <div className="flex flex-col gap-2 pt-6">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingPhoto(false);
+                        setSelectedFile(null);
+                      }}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={!selectedFile || addPhoto.isPending}
+                      onClick={() => addPhoto.mutate()}
+                    >
+                      {addPhoto.isPending ? 'Mengupload...' : 'Simpan'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

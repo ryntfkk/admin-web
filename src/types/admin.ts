@@ -202,6 +202,7 @@ export interface UserRow {
   name: string;
   phone: NullString;
   email: NullString;
+  avatar_url: NullString;
   active_role: string;
   is_suspended: boolean;
   is_verified: boolean;
@@ -214,6 +215,7 @@ export interface UserDetailRow {
   name: string;
   email: NullString;
   phone: NullString;
+  avatar_url: NullString;
   is_suspended: boolean;
   suspended_until: NullTime;
   active_role: string;
