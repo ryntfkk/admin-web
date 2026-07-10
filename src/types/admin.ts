@@ -221,3 +221,154 @@ export interface UserDetailRow {
   active_role: string;
   created_at: string;
 }
+
+// ── Reports ──────────────────────────────────────────────────────────
+export interface ReportRow {
+  id: string;
+  reporter_id: string;
+  reporter_name: string;
+  target_type: string;
+  target_id: string;
+  reason_category: string;
+  description: NullString;
+  status: string;
+  evidence_urls: string[] | null;
+  created_at: string;
+  resolved_by: NullString;
+  resolution_note: NullString;
+  resolved_at: NullTime;
+}
+
+export interface ReportDetailRow {
+  id: string;
+  reporter_id: string;
+  reporter_name: string;
+  reporter_phone: NullString;
+  target_type: string;
+  target_id: string;
+  reason_category: string;
+  description: NullString;
+  status: string;
+  evidence_urls: string[] | null;
+  created_at: string;
+  resolved_by: NullString;
+  resolution_note: NullString;
+  resolved_at: NullTime;
+  target_name: NullString;
+  target_details: NullString;
+}
+
+// ── Reviews ──────────────────────────────────────────────────────────
+export interface ReviewRow {
+  id: string;
+  order_id: string;
+  order_number: string;
+  customer_id: string;
+  customer_name: string;
+  partner_id: string;
+  partner_name: string;
+  rating: number;
+  quality_rating: number;
+  punctuality_rating: number;
+  communication_rating: number;
+  comment: NullString;
+  partner_response: NullString;
+  partner_response_at: NullTime;
+  is_hidden: boolean;
+  created_at: string;
+}
+
+export interface ReviewDetailRow extends ReviewRow {
+  service_name: NullString;
+  order_amount: number;
+  customer_phone: NullString;
+  rating_quality: number | null;
+  rating_punctuality: number | null;
+  rating_communication: number | null;
+}
+
+// ── Wallet / Financial ───────────────────────────────────────────────
+export interface WalletRow {
+  user_id: string;
+  user_name: string;
+  balance: number;
+  total_credits: number;
+  total_debits: number;
+}
+
+export interface WalletDetailRow extends WalletRow {
+  user_phone: NullString;
+}
+
+export interface WalletTransactionRow {
+  id: string;
+  user_id: string;
+  type: string;
+  category: string;
+  status: string;
+  amount: number;
+  description: NullString;
+  created_at: string;
+  order_number: string | null;
+}
+
+export interface AllTransactionRow {
+  id: string;
+  user_id: string;
+  user_name: string;
+  type: string;
+  category: string;
+  status: string;
+  amount: number;
+  description: NullString;
+  created_at: string;
+  order_number: string | null;
+  withdrawal_id: string | null;
+  bank_code: NullString;
+  bank_account_number: NullString;
+}
+
+export interface FinancialSummary {
+  total_earnings: number;
+  total_refunds: number;
+  total_withdrawals: number;
+  total_payments: number;
+  total_topups: number;
+}
+
+// ── Notifications ───────────────────────────────────────────────────
+export interface NotificationRow {
+  id: string;
+  user_id: string;
+  user_name: string;
+  type: string;
+  title: string;
+  body: NullString;
+  is_read: boolean;
+  metadata: NullString;
+  created_at: string;
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────
+export interface ChatRoomRow {
+  id: string;
+  customer_id: string;
+  customer_name: string;
+  partner_id: string;
+  partner_name: string;
+  last_message_at: NullTime;
+  last_message_preview: NullString;
+  unread_count: number;
+  created_at: string;
+}
+
+export interface ChatMessageRow {
+  id: string;
+  sender_id: string;
+  sender_name: string;
+  sender_role: string;
+  message_type: string;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}

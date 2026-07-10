@@ -108,3 +108,117 @@ export const USER_STATUS_OPTIONS = [
   { value: 'active', label: 'Aktif' },
   { value: 'suspended', label: 'Suspended' },
 ];
+
+// ── Reports ──────────────────────────────────────────────────────────
+export const REPORT_STATUS_OPTIONS = [
+  { value: '', label: 'Semua status' },
+  { value: 'OPEN', label: 'Terbuka' },
+  { value: 'REVIEWING', label: 'Ditinjau' },
+  { value: 'ACTIONED', label: 'Ditindaklanjuti' },
+  { value: 'DISMISSED', label: 'Dismissed' },
+];
+
+export const REPORT_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Terbuka',
+  REVIEWING: 'Ditinjau',
+  ACTIONED: 'Ditindaklanjuti',
+  DISMISSED: 'Dismissed',
+};
+
+export const REPORT_TYPE_LABELS: Record<string, string> = {
+  PARTNER: 'Mitra',
+  SERVICE: 'Layanan',
+  REVIEW: 'Review',
+  CHAT_MESSAGE: 'Pesan Chat',
+  USER: 'Pengguna',
+};
+
+export function reportStatusVariant(status: string): 'warning' | 'info' | 'success' | 'neutral' | 'danger' {
+  switch (status) {
+    case 'OPEN':
+      return 'warning';
+    case 'REVIEWING':
+      return 'info';
+    case 'ACTIONED':
+      return 'success';
+    case 'DISMISSED':
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
+}
+
+export function reportTypeVariant(type: string): 'info' | 'success' | 'warning' | 'danger' | 'default' {
+  switch (type) {
+    case 'PARTNER':
+      return 'info';
+    case 'SERVICE':
+      return 'success';
+    case 'REVIEW':
+      return 'warning';
+    case 'CHAT_MESSAGE':
+      return 'default';
+    case 'USER':
+      return 'danger';
+    default:
+      return 'default';
+  }
+}
+
+// ── Reviews ──────────────────────────────────────────────────────────
+export const REVIEW_STATUS_OPTIONS = [
+  { value: '', label: 'Semua' },
+  { value: 'visible', label: 'Visible' },
+  { value: 'hidden', label: 'Hidden' },
+];
+
+export function starRatingVariant(rating: number): 'success' | 'warning' | 'info' | 'neutral' {
+  if (rating >= 4) return 'success';
+  if (rating >= 3) return 'warning';
+  if (rating >= 2) return 'info';
+  return 'neutral';
+}
+
+// ── Wallet ────────────────────────────────────────────────────────────
+export const WALLET_TX_CATEGORY_LABELS: Record<string, string> = {
+  EARNING: 'Pendapatan',
+  REFUND: 'Refund',
+  WITHDRAWAL: 'Penarikan',
+  TOPUP: 'Top-up',
+  PAYMENT: 'Pembayaran',
+};
+
+export const WALLET_TX_TYPE_LABELS: Record<string, string> = {
+  CREDIT: 'Masuk',
+  DEBIT: 'Keluar',
+};
+
+export const WALLET_TX_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pending',
+  COMPLETED: 'Selesai',
+  FAILED: 'Gagal',
+};
+
+export function walletTxTypeVariant(type: string): 'success' | 'danger' | 'neutral' {
+  switch (type) {
+    case 'CREDIT':
+      return 'success';
+    case 'DEBIT':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+export function walletTxStatusVariant(status: string): 'warning' | 'success' | 'danger' | 'neutral' {
+  switch (status) {
+    case 'PENDING':
+      return 'warning';
+    case 'COMPLETED':
+      return 'success';
+    case 'FAILED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}

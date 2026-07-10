@@ -9,6 +9,11 @@ import {
   LayoutGrid,
   ScrollText,
   Package,
+  Flag,
+  Star,
+  Wallet,
+  Bell,
+  MessageSquare,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -31,4 +36,9 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, ready: true },
   { label: 'Transaksi', href: '/dashboard/transactions', icon: Receipt, ready: true },
   { label: 'Kategori', href: '/dashboard/categories', icon: LayoutGrid, ready: true },
+  { label: 'Laporan', href: '/dashboard/reports', icon: Flag, ready: true },
+  { label: 'Review', href: '/dashboard/reviews', icon: Star, ready: true },
+  { label: 'Keuangan', href: '/dashboard/financial', icon: Wallet, ready: true },
+  { label: 'Notifikasi', href: '/dashboard/notifications', icon: Bell, ready: true },
+  { label: 'Chat', href: '/dashboard/chat', icon: MessageSquare, ready: true },
 ];
