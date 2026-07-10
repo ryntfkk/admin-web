@@ -176,6 +176,7 @@ function CategoryEditor({
               currentUrl={iconUrl || undefined}
               onFileSelect={(file) => setSelectedFile(file)}
               onUploaded={(url) => setIconUrl(url)}
+              onRemove={() => setIconUrl('')}
               previewWidth={80}
               previewHeight={80}
               optional={true}

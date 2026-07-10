@@ -39,6 +39,8 @@ interface FileUploadProps {
   onUploaded?: (url: string) => void;
   /** Callback ketika file dipilih (sebelum upload) */
   onFileSelect?: (file: File | null) => void;
+  /** Callback ketika file dihapus */
+  onRemove?: () => void;
   /** Preview width */
   previewWidth?: number;
   /** Preview height */
@@ -57,6 +59,7 @@ export function FileUpload({
   currentUrl,
   onUploaded,
   onFileSelect,
+  onRemove,
   previewWidth = 120,
   previewHeight = 120,
   optional = true,
@@ -132,11 +135,12 @@ export function FileUpload({
 
   const handleRemove = useCallback(() => {
     setSelectedFile(null);
-    setPreview(currentUrl ?? '');
+    setPreview('');
     setError('');
     onFileSelect?.(null);
+    onRemove?.();
     if (inputRef.current) inputRef.current.value = '';
-  }, [currentUrl, onFileSelect]);
+  }, [onFileSelect, onRemove]);
 
   const uploadFile = useCallback(async (): Promise<string | null> => {
     if (!selectedFile) return preview || null;
@@ -218,7 +222,7 @@ export function FileUpload({
   }, [preview]);
 
   const hasPreview = !!preview;
-  const showRemove = hasPreview && (selectedFile || currentUrl) && (!optional || preview);
+  const showRemove = hasPreview && (!optional || preview);
 
   return (
     <div className={cn('space-y-2', className)}>
