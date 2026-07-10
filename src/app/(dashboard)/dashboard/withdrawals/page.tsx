@@ -35,10 +35,10 @@ export default function WithdrawalsPage() {
   });
 
   const process = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, action }: { id: string; action: string }) => {
       const res = await fetchAPI(`/admin/withdrawals/${id}/process`, {
         method: 'PUT',
-        body: JSON.stringify({ action: 'approve' }),
+        body: JSON.stringify({ action }),
       });
       if (!res.success) throw new Error(getErrorMessage(res));
     },
@@ -144,8 +144,15 @@ export default function WithdrawalsPage() {
                 Batal
               </Button>
               <Button
+                variant="destructive"
                 disabled={process.isPending}
-                onClick={() => process.mutate(selected.id)}
+                onClick={() => process.mutate({ id: selected.id, action: 'reject' })}
+              >
+                Tolak
+              </Button>
+              <Button
+                disabled={process.isPending}
+                onClick={() => process.mutate({ id: selected.id, action: 'approve' })}
               >
                 Tandai Selesai
               </Button>
