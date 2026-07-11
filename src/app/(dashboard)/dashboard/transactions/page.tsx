@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Search } from 'lucide-react';
+import { Eye, Search, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { OrderRow, OrderDetailRow } from '@/types/admin';
+import type { OrderRow, OrderDetailRow, OrderStatusHistoryRow } from '@/types/admin';
 import { nstr, ntime } from '@/lib/sql';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { ORDER_STATUS_OPTIONS, ORDER_STATUS_LABELS, orderStatusVariant } from '@/lib/enums';
@@ -144,6 +144,8 @@ export default function TransactionsPage() {
 }
 
 function OrderDetailModal({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+  const [showHistory, setShowHistory] = useState(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ['order-detail', orderId],
     queryFn: async () => {
@@ -151,6 +153,16 @@ function OrderDetailModal({ orderId, onClose }: { orderId: string; onClose: () =
       if (!res.success || !res.data) throw new Error(getErrorMessage(res));
       return res.data;
     },
+  });
+
+  const { data: historyData } = useQuery({
+    queryKey: ['order-status-history', orderId],
+    queryFn: async () => {
+      const res = await fetchAPI<OrderStatusHistoryRow[]>(`/admin/orders/${orderId}/status-history`);
+      if (!res.success) return [];
+      return res.data || [];
+    },
+    enabled: showHistory,
   });
 
   return (
@@ -203,6 +215,55 @@ function OrderDetailModal({ orderId, onClose }: { orderId: string; onClose: () =
               Selesai pada {formatDateTime(ntime(data.completed_at))}
             </p>
           )}
+
+          {/* Status History Section */}
+          <div className="border-t border-border pt-4">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex w-full items-center justify-between text-sm font-medium"
+            >
+              <span className="flex items-center gap-2">
+                <Clock className="size-4" />
+                Riwayat Status
+              </span>
+              {showHistory ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </button>
+
+            {showHistory && (
+              <div className="mt-3 space-y-2">
+                {historyData && historyData.length > 0 ? (
+                  historyData.map((h, i) => (
+                    <div key={h.id} className="flex gap-3 text-sm">
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          {i + 1}
+                        </div>
+                        {i < historyData.length - 1 && <div className="h-4 w-px bg-border" />}
+                      </div>
+                      <div className="flex-1 pb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={orderStatusVariant(h.status)} className="text-xs">
+                            {ORDER_STATUS_LABELS[h.status] || h.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {formatDateTime(h.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {nstr(h.actor_name) || 'System'} ({nstr(h.actor_role) || 'system'})
+                        </p>
+                        {nstr(h.reason) && (
+                          <p className="mt-1 text-xs text-muted-foreground">{nstr(h.reason)}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Memuat riwayat...</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Modal>

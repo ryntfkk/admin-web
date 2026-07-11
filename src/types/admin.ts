@@ -356,10 +356,11 @@ export interface ChatRoomRow {
   customer_name: string;
   partner_id: string;
   partner_name: string;
+  last_message: NullString;
   last_message_at: NullTime;
-  last_message_preview: NullString;
   unread_count: number;
   created_at: string;
+  updated_at: string;
 }
 
 export interface ChatMessageRow {
@@ -370,5 +371,17 @@ export interface ChatMessageRow {
   message_type: string;
   content: string;
   is_read: boolean;
+  created_at: string;
+}
+
+// ── Order Status History ─────────────────────────────────────────────
+export interface OrderStatusHistoryRow {
+  id: string;
+  order_id: string;
+  status: string;
+  actor_id: NullString;
+  actor_name: NullString;
+  actor_role: NullString;
+  reason: NullString;
   created_at: string;
 }
