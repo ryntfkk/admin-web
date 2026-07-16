@@ -184,6 +184,8 @@ export interface ServicePhoto {
 }
 
 export interface ServiceDetail extends ServiceRow {
+  included_items: string[];
+  excluded_items: string[];
   photos: ServicePhoto[];
 }
 
@@ -213,12 +215,29 @@ export interface UserRow {
 export interface UserDetailRow {
   id: string;
   name: string;
+  username: string;
   email: NullString;
   phone: NullString;
   avatar_url: NullString;
+  balance: number;
   is_suspended: boolean;
   suspended_until: NullTime;
   active_role: string;
+  created_at: string;
+}
+
+export interface UserAddressRow {
+  id: string;
+  user_id: string;
+  label: string;
+  address: string;
+  address_detail: NullString;
+  city: NullString;
+  district: NullString;
+  province: NullString;
+  lon: number | null;
+  lat: number | null;
+  is_default: boolean;
   created_at: string;
 }
 

@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, ShieldBan, ShieldCheck, Cog, Camera } from 'lucide-react';
+import { Search, ShieldBan, ShieldCheck, Cog, Camera, Pencil, MapPin, Trash2 } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { UserRow, UserDetailRow } from '@/types/admin';
+import type { UserRow, UserDetailRow, UserAddressRow } from '@/types/admin';
 import { nstr, ntime } from '@/lib/sql';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
@@ -211,12 +211,27 @@ function UserDetailModal({
   onChanged: () => void;
 }) {
   const qc = useQueryClient();
-  const [mode, setMode] = useState<'view' | 'suspend' | 'unsuspend' | 'changePhoto'>('view');
+  const [mode, setMode] = useState<
+    'view' | 'suspend' | 'unsuspend' | 'changePhoto' | 'editProfile' | 'editAddress'
+  >('view');
   const [duration, setDuration] = useState('24');
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // Edit profil
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '' });
+  // Edit alamat
+  const [addrForm, setAddrForm] = useState({
+    id: '',
+    label: '',
+    address: '',
+    address_detail: '',
+    city: '',
+    district: '',
+    province: '',
+    is_default: false,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['user-detail', userId],
@@ -227,9 +242,22 @@ function UserDetailModal({
     },
   });
 
+  const { data: addresses } = useQuery({
+    queryKey: ['user-addresses', userId],
+    queryFn: async () => {
+      const res = await fetchAPI<UserAddressRow[]>(`/admin/users/${userId}/addresses`);
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
   function invalidate() {
     qc.invalidateQueries({ queryKey: ['users'] });
     qc.invalidateQueries({ queryKey: ['user-detail', userId] });
+  }
+
+  function invalidateAddresses() {
+    qc.invalidateQueries({ queryKey: ['user-addresses', userId] });
   }
 
   const changePhoto = useMutation({
@@ -256,6 +284,64 @@ function UserDetailModal({
       setSelectedFile(null);
       setMode('view');
       invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveProfile = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: profileForm.name,
+          email: profileForm.email,
+          phone: profileForm.phone,
+        }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Profil pengguna diperbarui');
+      setMode('view');
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const saveAddress = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/users/${userId}/addresses/${addrForm.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          label: addrForm.label,
+          address: addrForm.address,
+          address_detail: addrForm.address_detail,
+          city: addrForm.city,
+          district: addrForm.district,
+          province: addrForm.province,
+          is_default: addrForm.is_default,
+        }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Alamat diperbarui');
+      setMode('view');
+      invalidateAddresses();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteAddress = useMutation({
+    mutationFn: async (addressId: string) => {
+      const res = await fetchAPI(`/admin/users/${userId}/addresses/${addressId}`, {
+        method: 'DELETE',
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Alamat dihapus');
+      invalidateAddresses();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -373,6 +459,105 @@ function UserDetailModal({
             </Button>
           </div>
         </div>
+      ) : mode === 'editProfile' ? (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>Nama</Label>
+            <Input
+              value={profileForm.name}
+              onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={profileForm.email}
+              onChange={(e) => setProfileForm((f) => ({ ...f, email: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Telepon</Label>
+            <Input
+              value={profileForm.phone}
+              onChange={(e) => setProfileForm((f) => ({ ...f, phone: e.target.value }))}
+            />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button variant="ghost" onClick={() => setMode('view')}>
+              Batal
+            </Button>
+            <Button
+              disabled={!profileForm.name.trim() || saveProfile.isPending}
+              onClick={() => saveProfile.mutate()}
+            >
+              {saveProfile.isPending ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </div>
+        </div>
+      ) : mode === 'editAddress' ? (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1.5">
+            <Label>Label</Label>
+            <Input
+              value={addrForm.label}
+              onChange={(e) => setAddrForm((f) => ({ ...f, label: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Alamat lengkap</Label>
+            <Textarea
+              value={addrForm.address}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Detail / Catatan</Label>
+            <Input
+              value={addrForm.address_detail}
+              onChange={(e) => setAddrForm((f) => ({ ...f, address_detail: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Provinsi</Label>
+              <Input
+                value={addrForm.province}
+                onChange={(e) => setAddrForm((f) => ({ ...f, province: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Kota</Label>
+              <Input
+                value={addrForm.city}
+                onChange={(e) => setAddrForm((f) => ({ ...f, city: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Kecamatan</Label>
+              <Input
+                value={addrForm.district}
+                onChange={(e) => setAddrForm((f) => ({ ...f, district: e.target.value }))}
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={addrForm.is_default}
+              onChange={(e) => setAddrForm((f) => ({ ...f, is_default: e.target.checked }))}
+            />
+            Jadikan alamat utama
+          </label>
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button variant="ghost" onClick={() => setMode('view')}>
+              Batal
+            </Button>
+            <Button disabled={saveAddress.isPending} onClick={() => saveAddress.mutate()}>
+              {saveAddress.isPending ? 'Menyimpan...' : 'Simpan Alamat'}
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -408,7 +593,7 @@ function UserDetailModal({
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -421,10 +606,29 @@ function UserDetailModal({
               <Camera className="size-4" />
               Ganti Foto
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setProfileForm({
+                  name: data.name || '',
+                  email: nstr(data.email) || '',
+                  phone: nstr(data.phone) || '',
+                });
+                setMode('editProfile');
+              }}
+            >
+              <Pencil className="size-4" />
+              Edit Profil
+            </Button>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
+            <Field label="Username" value={data.username ? `@${data.username}` : '-'} />
             <Field label="Role aktif" value={roleLabel[data.active_role] || data.active_role} />
+            <Field label="Email" value={nstr(data.email) || '-'} />
+            <Field label="Telepon" value={nstr(data.phone) || '-'} />
+            <Field label="Saldo" value={formatIDR(data.balance)} />
             <Field label="Terdaftar" value={formatDateTime(data.created_at)} />
             {data.is_suspended && (
               <Field
@@ -437,6 +641,70 @@ function UserDetailModal({
               />
             )}
             <Field label="User ID" value={data.id} mono />
+          </div>
+
+          {/* Alamat pengguna */}
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="text-sm font-medium">Alamat</p>
+            {!addresses ? (
+              <p className="text-xs text-muted-foreground">Memuat alamat…</p>
+            ) : addresses.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Pengguna belum punya alamat.</p>
+            ) : (
+              <div className="space-y-2">
+                {addresses.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-start justify-between gap-2 rounded-md border border-border p-2.5 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium">{a.label || 'Alamat'}</span>
+                        {a.is_default && <Badge variant="neutral">Utama</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{a.address}</p>
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="size-3 shrink-0" />
+                        {[nstr(a.district), nstr(a.city), nstr(a.province)]
+                          .filter(Boolean)
+                          .join(', ') || '-'}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setAddrForm({
+                            id: a.id,
+                            label: a.label || '',
+                            address: a.address || '',
+                            address_detail: nstr(a.address_detail) || '',
+                            city: nstr(a.city) || '',
+                            district: nstr(a.district) || '',
+                            province: nstr(a.province) || '',
+                            is_default: a.is_default,
+                          });
+                          setMode('editAddress');
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={deleteAddress.isPending}
+                        onClick={() => {
+                          if (window.confirm('Hapus alamat ini?')) deleteAddress.mutate(a.id);
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-border pt-4">

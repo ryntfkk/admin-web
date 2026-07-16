@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Search, Eye, EyeOff, Trash2, ImageIcon, Pencil, Plus, Star, X } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import { FileUpload, uploadFileToStorage } from '@/components/ui/file-upload';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { ServiceRow, ServiceDetail, ServicePhoto } from '@/types/admin';
+import type { ServiceRow, ServiceDetail, ServicePhoto, Category } from '@/types/admin';
 import { nstr } from '@/lib/sql';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
@@ -263,8 +263,21 @@ function ServiceEditor({
   const [price, setPrice] = useState(service.price.toString());
   const [estimatedDuration, setEstimatedDuration] = useState(service.estimated_duration.toString());
   const [isActive, setIsActive] = useState(service.is_active);
+  const [categoryId, setCategoryId] = useState(service.category_id);
+  const [includedItems, setIncludedItems] = useState<string>('');
+  const [excludedItems, setExcludedItems] = useState<string>('');
   const [isAddingPhoto, setIsAddingPhoto] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Daftar kategori untuk dropdown pemindah kategori
+  const { data: categories } = useQuery({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const res = await fetchAPI<Category[]>('/admin/categories');
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
 
   // Fetch service detail with photos
   const { data: detail, isLoading: detailLoading } = useQuery({
@@ -275,6 +288,13 @@ function ServiceEditor({
       return res.data;
     },
   });
+
+  useEffect(() => {
+    if (detail) {
+      setIncludedItems((detail.included_items || []).join('\n'));
+      setExcludedItems((detail.excluded_items || []).join('\n'));
+    }
+  }, [detail]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -296,6 +316,9 @@ function ServiceEditor({
           price: priceNum,
           estimated_duration: durationNum,
           is_active: isActive,
+          category_id: categoryId,
+          included_items: includedItems.split('\n').map(i => i.trim()).filter(Boolean),
+          excluded_items: excludedItems.split('\n').map(i => i.trim()).filter(Boolean),
         }),
       });
       if (!res.success) throw new Error(getErrorMessage(res));
@@ -437,6 +460,30 @@ function ServiceEditor({
           </div>
         </div>
 
+        {/* Termasuk & Tidak Termasuk */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-green-600">Termasuk (Include)</label>
+            <textarea
+              value={includedItems}
+              onChange={(e) => setIncludedItems(e.target.value)}
+              placeholder="Pisahkan dengan baris baru (enter)..."
+              rows={4}
+              className="flex min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-red-600">Tidak Termasuk (Exclude)</label>
+            <textarea
+              value={excludedItems}
+              onChange={(e) => setExcludedItems(e.target.value)}
+              placeholder="Pisahkan dengan baris baru (enter)..."
+              rows={4}
+              className="flex min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            />
+          </div>
+        </div>
+
         {/* Status aktif */}
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -448,10 +495,20 @@ function ServiceEditor({
           Aktif (tampil di aplikasi publik)
         </label>
 
-        {/* Info kategori (read-only) */}
-        <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
-          <p className="text-xs text-muted-foreground">Kategori</p>
-          <p className="font-medium">{service.category_name}</p>
+        {/* Kategori */}
+        <div className="space-y-1">
+          <label className="text-sm font-medium">Kategori</label>
+          <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+            {/* Pastikan kategori saat ini tetap ada di opsi walau sudah nonaktif */}
+            {!categories?.some((c) => c.id === service.category_id) && (
+              <option value={service.category_id}>{service.category_name}</option>
+            )}
+            {categories?.map((c) => (
+              <option key={c.id} value={c.id} disabled={!c.is_active && c.id !== service.category_id}>
+                {c.name}{!c.is_active ? ' (nonaktif)' : ''}
+              </option>
+            ))}
+          </Select>
         </div>
 
         {/* Photos Section */}
