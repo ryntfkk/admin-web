@@ -152,7 +152,10 @@ export default function ServicesPage() {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{s.partner_name}</TableCell>
                   <TableCell className="text-muted-foreground">{s.category_name}</TableCell>
-                  <TableCell>{formatIDR(s.price)}</TableCell>
+                  <TableCell>
+                    {formatIDR(s.price)}
+                    <span className="text-xs text-muted-foreground">{' '}/{s.unit === 'per_hour' ? 'jam' : s.unit === 'per_unit' ? 'unit' : 'jasa'}</span>
+                  </TableCell>
                   <TableCell>
                     {s.is_active ? (
                       <Badge variant="success">Aktif</Badge>
@@ -261,6 +264,7 @@ function ServiceEditor({
   const [name, setName] = useState(service.name);
   const [description, setDescription] = useState(nstr(service.description) ?? '');
   const [price, setPrice] = useState(service.price.toString());
+  const [unit, setUnit] = useState(service.unit || 'per_service');
   const [estimatedDuration, setEstimatedDuration] = useState(service.estimated_duration.toString());
   const [isActive, setIsActive] = useState(service.is_active);
   const [categoryId, setCategoryId] = useState(service.category_id);
@@ -299,13 +303,14 @@ function ServiceEditor({
   const save = useMutation({
     mutationFn: async () => {
       const priceNum = parseInt(price, 10);
-      const durationNum = parseInt(estimatedDuration, 10);
+      // per_hour: estimasi dikunci ke 60 menit (1 jam); selain itu dari input admin.
+      const durationNum = unit === 'per_hour' ? 60 : parseInt(estimatedDuration, 10);
 
       if (isNaN(priceNum) || priceNum < 0) {
         throw new Error('Harga harus angka positif');
       }
-      if (isNaN(durationNum) || durationNum <= 0) {
-        throw new Error('Durasi estimasi harus angka positif');
+      if (unit !== 'per_hour' && (isNaN(durationNum) || durationNum < 15)) {
+        throw new Error('Durasi estimasi minimal 15 menit');
       }
 
       const res = await fetchAPI(`/admin/services/${service.id}`, {
@@ -314,6 +319,7 @@ function ServiceEditor({
           name: name.trim(),
           description: description.trim() || null,
           price: priceNum,
+          unit,
           estimated_duration: durationNum,
           is_active: isActive,
           category_id: categoryId,
@@ -436,6 +442,20 @@ function ServiceEditor({
           />
         </div>
 
+        {/* Satuan Harga */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Satuan Harga</label>
+          <select
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+          >
+            <option value="per_service">Per Jasa (borongan)</option>
+            <option value="per_hour">Per Jam</option>
+            <option value="per_unit">Per Unit</option>
+          </select>
+        </div>
+
         {/* Harga & Durasi */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -452,11 +472,15 @@ function ServiceEditor({
             <label className="text-sm font-medium">Durasi (menit)</label>
             <Input
               type="number"
-              min="1"
-              value={estimatedDuration}
+              min="15"
+              value={unit === 'per_hour' ? 60 : estimatedDuration}
+              disabled={unit === 'per_hour'}
               onChange={(e) => setEstimatedDuration(e.target.value)}
               placeholder="60"
             />
+            {unit === 'per_hour' && (
+              <p className="text-xs text-muted-foreground">Otomatis 1 jam / satuan</p>
+            )}
           </div>
         </div>
 

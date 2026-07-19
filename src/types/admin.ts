@@ -171,6 +171,7 @@ export interface ServiceRow {
   description: NullString;
   price: number;
   estimated_duration: number;
+  unit: string;
   is_active: boolean;
   photo_count: number;
   created_at: string;
