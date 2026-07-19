@@ -60,6 +60,10 @@ export interface DisputeDetailRow {
   customer_name: string;
   partner_id: string;
   partner_name: string;
+  /** Status order saat ini — resolusi hanya sah bila 'DISPUTED'. */
+  order_status: string;
+  /** Total dana terkumpul (order + biaya tambahan PAID) = plafon refund + payout. */
+  total_collected: number;
 }
 
 // ── Withdrawals ─────────────────────────────────────────────────────

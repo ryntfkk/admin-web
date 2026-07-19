@@ -14,8 +14,10 @@ import {
   DISPUTE_STATUS_OPTIONS,
   DISPUTE_STATUS_LABELS,
   DISPUTE_TYPE_LABELS,
+  ORDER_STATUS_LABELS,
   RESOLUTION_TYPE_OPTIONS,
   disputeStatusVariant,
+  orderStatusVariant,
 } from '@/lib/enums';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -204,12 +206,36 @@ function DisputeDetailModal({
       onDone();
       onClose();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      toast.error(e.message);
+      // Konflik (order berubah status / sengketa diambil admin lain) —
+      // muat ulang detail agar UI langsung menampilkan kondisi terbaru.
+      refetch();
+    },
   });
 
   const status = data?.status;
   const showRefund = resolutionType === 'FULL_REFUND' || resolutionType === 'PARTIAL_REFUND';
   const showPayout = resolutionType === 'PAY_PARTNER' || resolutionType === 'PARTIAL_REFUND';
+
+  // Konteks & validasi resolusi (mencerminkan guard di backend):
+  // - resolusi hanya sah bila order masih DISPUTED;
+  // - refund + payout tidak boleh melebihi total dana terkumpul.
+  // Field baru bisa saja belum ada (backend lama) — jangan salah memblokir;
+  // backend tetap penjaga terakhir.
+  const totalCollected =
+    typeof data?.total_collected === 'number' ? data.total_collected : null;
+  const orderNotDisputed =
+    !!data && typeof data.order_status === 'string' && data.order_status !== '' &&
+    data.order_status !== 'DISPUTED';
+  const refundNum = showRefund ? Number(refundAmount) || 0 : 0;
+  const payoutNum = showPayout ? Number(partnerPayout) || 0 : 0;
+  const amountNegative = refundNum < 0 || payoutNum < 0;
+  const amountError = amountNegative
+    ? 'Nominal tidak boleh negatif.'
+    : totalCollected !== null && refundNum + payoutNum > totalCollected
+      ? `Refund + payout (${formatIDR(refundNum + payoutNum)}) melebihi total dana terkumpul (${formatIDR(totalCollected)}).`
+      : null;
 
   return (
     <Modal open onClose={onClose} title="Detail Sengketa" className="max-w-2xl">
@@ -232,6 +258,16 @@ function DisputeDetailModal({
                 {DISPUTE_STATUS_LABELS[data.status] || data.status}
               </Badge>
             </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Status Order</p>
+              <Badge variant={orderStatusVariant(data.order_status)} className="mt-1">
+                {ORDER_STATUS_LABELS[data.order_status] || data.order_status || '-'}
+              </Badge>
+            </div>
+            <Field
+              label="Dana Terkumpul (maks. refund + payout)"
+              value={totalCollected !== null ? formatIDR(totalCollected) : '-'}
+            />
           </div>
 
           {nstr(data.response_content) && (
@@ -284,6 +320,21 @@ function DisputeDetailModal({
                 Ambil &amp; Tinjau
               </Button>
             </div>
+          ) : orderNotDisputed ? (
+            <div className="space-y-2 border-t border-border pt-4">
+              <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+                <p className="font-medium">Resolusi tidak tersedia</p>
+                <p className="mt-0.5">
+                  Status order sudah berubah menjadi{' '}
+                  <strong>
+                    {ORDER_STATUS_LABELS[data.order_status] || data.order_status}
+                  </strong>{' '}
+                  (bukan Sengketa lagi), sehingga refund/payout dari tiket ini
+                  diblokir demi mencegah pembayaran ganda. Periksa riwayat order
+                  sebelum menindaklanjuti.
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3 border-t border-border pt-4">
               <p className="text-sm font-medium">Form Resolusi</p>
@@ -307,10 +358,16 @@ function DisputeDetailModal({
                     <Input
                       type="number"
                       min={0}
+                      max={totalCollected ?? undefined}
                       value={refundAmount}
                       onChange={(e) => setRefundAmount(e.target.value)}
                       placeholder="0"
                     />
+                    {totalCollected !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Maks. {formatIDR(totalCollected)}
+                      </p>
+                    )}
                   </div>
                 )}
                 {showPayout && (
@@ -319,13 +376,22 @@ function DisputeDetailModal({
                     <Input
                       type="number"
                       min={0}
+                      max={totalCollected ?? undefined}
                       value={partnerPayout}
                       onChange={(e) => setPartnerPayout(e.target.value)}
                       placeholder="0"
                     />
+                    {totalCollected !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        Maks. {formatIDR(totalCollected)} (gabungan dengan refund)
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
+              {amountError && (
+                <p className="text-sm font-medium text-destructive">{amountError}</p>
+              )}
               <div className="flex flex-col gap-1.5">
                 <Label>Catatan admin (wajib)</Label>
                 <Textarea
@@ -336,7 +402,7 @@ function DisputeDetailModal({
               </div>
               <div className="flex justify-end">
                 <Button
-                  disabled={!adminNotes.trim() || resolve.isPending}
+                  disabled={!adminNotes.trim() || !!amountError || resolve.isPending}
                   onClick={() => resolve.mutate()}
                 >
                   Tutup Tiket &amp; Selesaikan
