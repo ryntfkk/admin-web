@@ -272,6 +272,7 @@ function ServiceEditor({
   const [excludedItems, setExcludedItems] = useState<string>('');
   const [isAddingPhoto, setIsAddingPhoto] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [confirmDelVar, setConfirmDelVar] = useState<string | null>(null);
 
   // Daftar kategori untuk dropdown pemindah kategori
   const { data: categories } = useQuery({
@@ -302,7 +303,12 @@ function ServiceEditor({
 
   const save = useMutation({
     mutationFn: async () => {
-      const priceNum = parseInt(price, 10);
+      // Layanan bervariasi: services.price diturunkan dari variasi TERMURAH,
+      // bukan input admin — cegah "harga mulai dari" desync dari variasi.
+      const vars = detail?.variations ?? [];
+      const priceNum = vars.length > 0
+        ? Math.min(...vars.map((v) => v.price))
+        : parseInt(price, 10);
       // per_hour: estimasi dikunci ke 60 menit (1 jam); selain itu dari input admin.
       const durationNum = unit === 'per_hour' ? 60 : parseInt(estimatedDuration, 10);
 
@@ -400,6 +406,22 @@ function ServiceEditor({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteVariation = useMutation({
+    mutationFn: async (variationId: string) => {
+      const res = await fetchAPI(`/admin/services/${service.id}/variations/${variationId}`, {
+        method: 'DELETE',
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Variasi dihapus');
+      setConfirmDelVar(null);
+      qc.invalidateQueries({ queryKey: ['service-detail', service.id] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const priceNum = parseInt(price, 10);
   const durationNum = parseInt(estimatedDuration, 10);
   const isValid =
@@ -410,6 +432,9 @@ function ServiceEditor({
     durationNum > 0;
 
   const photos = detail?.photos ?? [];
+  const variations = detail?.variations ?? [];
+  const hasVariations = variations.length > 0;
+  const minVariationPrice = hasVariations ? Math.min(...variations.map((v) => v.price)) : 0;
 
   return (
     <Modal open onClose={onClose} title="Edit Layanan" className="max-w-2xl">
@@ -463,10 +488,14 @@ function ServiceEditor({
             <Input
               type="number"
               min="0"
-              value={price}
+              value={hasVariations ? minVariationPrice : price}
+              disabled={hasVariations}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="150000"
             />
+            {hasVariations && (
+              <p className="text-xs text-muted-foreground">Mengikuti variasi (harga termurah)</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Durasi (menit)</label>
@@ -483,6 +512,58 @@ function ServiceEditor({
             )}
           </div>
         </div>
+
+        {/* Variasi harga (read-only — diatur mitra dari aplikasi) */}
+        {hasVariations && (
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">
+              Variasi Harga{' '}
+              <span className="text-xs font-normal text-muted-foreground">({variations.length})</span>
+            </label>
+            <div className="divide-y divide-border rounded-lg border border-border">
+              {variations.map((v) => (
+                <div key={v.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                  <span className="truncate">{v.name}</span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="font-medium">{formatIDR(v.price)}</span>
+                    {confirmDelVar === v.id ? (
+                      <span className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={deleteVariation.isPending}
+                          onClick={() => deleteVariation.mutate(v.id)}
+                          className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                        >
+                          Hapus
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelVar(null)}
+                          className="text-xs text-muted-foreground hover:underline"
+                        >
+                          Batal
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        title={variations.length <= 1 ? 'Tidak bisa hapus variasi terakhir' : 'Hapus variasi'}
+                        disabled={variations.length <= 1}
+                        onClick={() => setConfirmDelVar(v.id)}
+                        className="text-muted-foreground hover:text-red-600 disabled:opacity-30 disabled:hover:text-muted-foreground"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Variasi diatur mitra dari aplikasi. Admin dapat menghapus variasi bermasalah (harga otomatis mengikuti variasi termurah yang tersisa; minimal 1 variasi).
+            </p>
+          </div>
+        )}
 
         {/* Termasuk & Tidak Termasuk */}
         <div className="grid grid-cols-2 gap-3">

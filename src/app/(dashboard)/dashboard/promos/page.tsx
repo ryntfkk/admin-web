@@ -305,7 +305,7 @@ function PromoEditor({
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label>Kuota total</Label>
+            <Label>Kuota total (0 = tanpa batas)</Label>
             <Input
               type="number"
               min={0}
@@ -315,7 +315,7 @@ function PromoEditor({
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>Kuota per user</Label>
+            <Label>Kuota per user (0 = tanpa batas)</Label>
             <Input
               type="number"
               min={0}

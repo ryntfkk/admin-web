@@ -107,7 +107,56 @@ export const USER_STATUS_OPTIONS = [
   { value: '', label: 'Semua status' },
   { value: 'active', label: 'Aktif' },
   { value: 'suspended', label: 'Suspended' },
+  { value: 'deleted', label: 'Terhapus' },
 ];
+
+export const LOGIN_EVENT_LABELS: Record<string, string> = {
+  LOGIN: 'Login',
+  LOGIN_FAILED: 'Login gagal',
+  REGISTER_OTP: 'Registrasi (OTP)',
+  REGISTER_EMAIL: 'Registrasi (email)',
+};
+
+export function loginEventVariant(event: string): 'success' | 'danger' | 'info' | 'neutral' {
+  switch (event) {
+    case 'LOGIN':
+      return 'success';
+    case 'LOGIN_FAILED':
+      return 'danger';
+    case 'REGISTER_OTP':
+    case 'REGISTER_EMAIL':
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
+// ── Partners ────────────────────────────────────────────────────────
+export const PARTNER_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Menunggu verifikasi' },
+  { value: 'approved', label: 'Disetujui' },
+  { value: 'rejected', label: 'Ditolak' },
+  { value: '', label: 'Semua status' },
+];
+
+export const PARTNER_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  approved: 'Disetujui',
+  rejected: 'Ditolak',
+};
+
+export function partnerStatusVariant(status: string): 'warning' | 'success' | 'danger' | 'neutral' {
+  switch (status) {
+    case 'pending':
+      return 'warning';
+    case 'approved':
+      return 'success';
+    case 'rejected':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
 
 // ── Reports ──────────────────────────────────────────────────────────
 export const REPORT_STATUS_OPTIONS = [
@@ -131,6 +180,7 @@ export const REPORT_TYPE_LABELS: Record<string, string> = {
   REVIEW: 'Review',
   CHAT_MESSAGE: 'Pesan Chat',
   USER: 'Pengguna',
+  SUPPORT: 'Bantuan CS',
 };
 
 export function reportStatusVariant(status: string): 'warning' | 'info' | 'success' | 'neutral' | 'danger' {

@@ -119,13 +119,14 @@ export interface PromoFormValues {
   is_active: boolean;
 }
 
-// ── Audit logs (db.AdminAuditLog) ───────────────────────────────────
+// ── Audit logs (admin.AuditLogResponse) ─────────────────────────────
 export interface AuditLog {
   id: string;
   admin_username: string;
   action: string;
-  target_id: NullString;
+  target_id?: string;
   payload?: unknown;
+  ip_address?: string;
   created_at: string;
 }
 
@@ -188,10 +189,18 @@ export interface ServicePhoto {
   sort_order: number;
 }
 
+export interface ServiceVariation {
+  id: string;
+  name: string;
+  price: number;
+}
+
 export interface ServiceDetail extends ServiceRow {
   included_items: string[];
   excluded_items: string[];
   photos: ServicePhoto[];
+  /** Variasi harga (kosong bila harga tunggal). Read-only di panel admin. */
+  variations: ServiceVariation[];
 }
 
 // ── Categories ──────────────────────────────────────────────────────
@@ -215,6 +224,7 @@ export interface UserRow {
   is_verified: boolean;
   balance: number;
   created_at: string;
+  deleted_at: NullTime;
 }
 
 export interface UserDetailRow {
@@ -229,6 +239,36 @@ export interface UserDetailRow {
   suspended_until: NullTime;
   active_role: string;
   created_at: string;
+  deleted_at: NullTime;
+}
+
+// ── Login history (admin.LoginHistoryResponse) ──────────────────────
+export interface LoginHistoryRow {
+  id: string;
+  event_type: string;
+  identifier?: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
+
+// ── Arsip penghapusan akun (db.UserDeletionArchive) ─────────────────
+export interface DeletionArchiveRow {
+  id: string;
+  user_id: string;
+  username: string;
+  name: string;
+  phone: NullString;
+  email: NullString;
+  avatar_url: NullString;
+  bank_code: NullString;
+  bank_account_number: NullString;
+  bank_account_name: NullString;
+  roles: string[];
+  active_role: string;
+  balance: number;
+  user_created_at: string;
+  deleted_at: string;
 }
 
 export interface UserAddressRow {
@@ -395,6 +435,18 @@ export interface ChatMessageRow {
   message_type: string;
   content: string;
   is_read: boolean;
+  created_at: string;
+}
+
+// Pesan dalam thread laporan/CS (chat dua arah pelapor ↔ admin).
+export interface ReportMessageRow {
+  id: string;
+  report_id: string;
+  sender_type: 'user' | 'admin';
+  admin_username: NullString;
+  sender_name: string;
+  content: string;
+  message_type: string;
   created_at: string;
 }
 

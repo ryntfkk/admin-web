@@ -2,11 +2,11 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Eye, Paperclip } from 'lucide-react';
+import { Eye, Paperclip, Send } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { ReportRow, ReportDetailRow } from '@/types/admin';
+import type { ReportRow, ReportDetailRow, ReportMessageRow } from '@/types/admin';
 import { nstr, ntime } from '@/lib/sql';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
@@ -84,6 +84,7 @@ export default function ReportsPage() {
               <option value="REVIEW">Review</option>
               <option value="CHAT_MESSAGE">Pesan Chat</option>
               <option value="USER">Pengguna</option>
+              <option value="SUPPORT">Bantuan CS</option>
             </Select>
           </div>
           <div className="w-40">
@@ -279,6 +280,8 @@ function ReportDetailModal({
             </div>
           )}
 
+          <ReportChatPanel reportId={reportId} />
+
           {data.status === 'ACTIONED' || data.status === 'DISMISSED' ? (
             <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
               <p className="font-medium">Hasil Penanganan</p>
@@ -328,6 +331,100 @@ function ReportDetailModal({
         </div>
       )}
     </Modal>
+  );
+}
+
+// Panel chat CS: admin membalas pelapor langsung di sini (polling, tanpa WS).
+function ReportChatPanel({ reportId }: { reportId: string }) {
+  const qc = useQueryClient();
+  const [input, setInput] = useState('');
+
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ['report-messages', reportId],
+    queryFn: async () => {
+      const res = await fetchAPI<ReportMessageRow[]>(`/admin/reports/${reportId}/messages`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data ?? [];
+    },
+    refetchInterval: 7000,
+  });
+
+  const send = useMutation({
+    mutationFn: async () => {
+      const content = input.trim();
+      if (!content) throw new Error('Pesan tidak boleh kosong');
+      const res = await fetchAPI(`/admin/reports/${reportId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content, message_type: 'text' }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      setInput('');
+      qc.invalidateQueries({ queryKey: ['report-messages', reportId] });
+      // Balasan pertama bisa mengubah status OPEN → REVIEWING.
+      qc.invalidateQueries({ queryKey: ['report-detail', reportId] });
+      qc.invalidateQueries({ queryKey: ['reports'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="border-t border-border pt-4">
+      <p className="mb-2 text-sm font-medium">Percakapan dengan Pelapor</p>
+      <div className="max-h-64 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/30 p-3">
+        {isLoading ? (
+          <p className="text-xs text-muted-foreground">Memuat pesan…</p>
+        ) : !messages || messages.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Belum ada pesan.</p>
+        ) : (
+          messages.map((m) => {
+            const isAdmin = m.sender_type === 'admin';
+            return (
+              <div key={m.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                <div
+                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                    isAdmin
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border border-border bg-background'
+                  }`}
+                >
+                  {m.message_type === 'image' ? (
+                    <a href={m.content} target="_blank" rel="noopener noreferrer" className="underline">
+                      Lampiran gambar
+                    </a>
+                  ) : (
+                    <span className="whitespace-pre-wrap">{m.content}</span>
+                  )}
+                </div>
+                <span className="mt-0.5 text-[10px] text-muted-foreground">
+                  {isAdmin ? nstr(m.admin_username) || 'Admin' : m.sender_name} ·{' '}
+                  {formatDateTime(m.created_at)}
+                </span>
+              </div>
+            );
+          })
+        )}
+      </div>
+      <div className="mt-2 flex items-end gap-2">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Tulis balasan ke pelapor…"
+          rows={2}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (input.trim()) send.mutate();
+            }
+          }}
+        />
+        <Button disabled={!input.trim() || send.isPending} onClick={() => send.mutate()}>
+          <Send className="size-4" />
+          Kirim
+        </Button>
+      </div>
+    </div>
   );
 }
 
