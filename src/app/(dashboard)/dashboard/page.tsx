@@ -7,6 +7,7 @@ import {
   BadgeCheck,
   ShoppingBag,
   Scale,
+  Flag,
   Banknote,
   Clock3,
   CheckCircle2,
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import type { DashboardStats } from '@/types/api';
-import { formatIDR, formatNumber } from '@/lib/format';
+import { formatNumber } from '@/lib/format';
 import { Card, CardContent } from '@/components/ui/card';
 
 function useStats() {
@@ -99,31 +100,42 @@ export default function DashboardPage() {
         <StatCard icon={ShoppingBag} label="Pesanan Aktif" value={formatNumber(o.active_orders)} />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/dashboard/partners" className="block">
-          <StatCard
-            icon={Clock3}
-            label="Mitra Menunggu Verifikasi"
-            value={formatNumber(o.pending_partners)}
-            accent="bg-amber-500/10 text-amber-600"
-          />
-        </Link>
-        <Link href="/dashboard/disputes" className="block">
-          <StatCard
-            icon={Scale}
-            label="Sengketa Terbuka"
-            value={formatNumber(o.open_disputes)}
-            accent="bg-rose-500/10 text-rose-600"
-          />
-        </Link>
-        <Link href="/dashboard/withdrawals" className="block">
-          <StatCard
-            icon={Banknote}
-            label="Withdrawal Tertunda"
-            value={formatIDR(data.financial.pending_withdrawals)}
-            accent="bg-emerald-500/10 text-emerald-600"
-          />
-        </Link>
+      <section>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground">Perlu Tindakan</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Link href="/dashboard/reports" className="block">
+            <StatCard
+              icon={Flag}
+              label="Laporan Terbuka"
+              value={formatNumber(o.open_reports)}
+              accent="bg-rose-500/10 text-rose-600"
+            />
+          </Link>
+          <Link href="/dashboard/disputes" className="block">
+            <StatCard
+              icon={Scale}
+              label="Sengketa Terbuka"
+              value={formatNumber(o.open_disputes)}
+              accent="bg-rose-500/10 text-rose-600"
+            />
+          </Link>
+          <Link href="/dashboard/partners" className="block">
+            <StatCard
+              icon={Clock3}
+              label="Mitra Menunggu Verifikasi"
+              value={formatNumber(o.pending_partners)}
+              accent="bg-amber-500/10 text-amber-600"
+            />
+          </Link>
+          <Link href="/dashboard/withdrawals" className="block">
+            <StatCard
+              icon={Banknote}
+              label="Withdrawal Tertunda"
+              value={formatNumber(data.financial.pending_withdrawals_count)}
+              accent="bg-emerald-500/10 text-emerald-600"
+            />
+          </Link>
+        </div>
       </section>
 
       <section>

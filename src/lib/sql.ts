@@ -11,6 +11,7 @@
 export interface NullString { String: string; Valid: boolean }
 export interface NullInt64 { Int64: number; Valid: boolean }
 export interface NullInt32 { Int32: number; Valid: boolean }
+export interface NullInt16 { Int16: number; Valid: boolean }
 export interface NullBool { Bool: boolean; Valid: boolean }
 export interface NullTime { Time: string; Valid: boolean }
 export interface NullUUID { UUID: string; Valid: boolean }
@@ -23,11 +24,14 @@ export function nstr(v: MaybeNull<NullString | string>): string | null {
   return v.Valid ? v.String : null;
 }
 
-export function nint(v: MaybeNull<NullInt64 | NullInt32 | number>): number | null {
+export function nint(v: MaybeNull<NullInt64 | NullInt32 | NullInt16 | number>): number | null {
   if (v == null) return null;
   if (typeof v === 'number') return v;
   if ('Int64' in v) return v.Valid ? v.Int64 : null;
   if ('Int32' in v) return v.Valid ? v.Int32 : null;
+  // sql.NullInt16 (mis. reviews.rating_quality) → { Int16, Valid }. Tanpa cabang
+  // ini nilainya jadi objek mentah → render sebagai React child = crash.
+  if ('Int16' in v) return v.Valid ? v.Int16 : null;
   return null;
 }
 

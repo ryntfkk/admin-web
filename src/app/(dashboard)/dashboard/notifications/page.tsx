@@ -157,7 +157,14 @@ function DeleteNotificationButton({ notificationId }: { notificationId: string }
   });
 
   return (
-    <Button variant="ghost" size="sm" onClick={() => del.mutate()} disabled={del.isPending}>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => {
+        if (window.confirm('Hapus notifikasi ini?')) del.mutate();
+      }}
+      disabled={del.isPending}
+    >
       <Trash2 className="size-4 text-rose-500" />
     </Button>
   );

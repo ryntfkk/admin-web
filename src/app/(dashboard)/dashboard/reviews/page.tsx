@@ -7,7 +7,7 @@ import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
 import type { ReviewRow, ReviewDetailRow } from '@/types/admin';
-import { nstr, ntime } from '@/lib/sql';
+import { nstr, nint, ntime } from '@/lib/sql';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
 import { REVIEW_STATUS_OPTIONS, starRatingVariant } from '@/lib/enums';
@@ -249,13 +249,21 @@ function ReviewDetailModal({
               </div>
               <span className="font-semibold">{data.rating}/5</span>
             </div>
-            {data.rating_quality && (
-              <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                <span>Kualitas: {data.rating_quality}</span>
-                <span>Ketepatan: {data.rating_punctuality}</span>
-                <span>Komunikasi: {data.rating_communication}</span>
-              </div>
-            )}
+            {(() => {
+              // Backend mengirim sub-rating sebagai sql.NullInt16 mentah
+              // ({Int16,Valid}) — WAJIB di-unwrap via nint, kalau tidak objeknya
+              // ter-render sebagai React child (crash) & guard-nya selalu truthy.
+              const q = nint(data.rating_quality);
+              const p = nint(data.rating_punctuality);
+              const c = nint(data.rating_communication);
+              return q !== null || p !== null || c !== null ? (
+                <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                  <span>Kualitas: {q ?? '-'}</span>
+                  <span>Ketepatan: {p ?? '-'}</span>
+                  <span>Komunikasi: {c ?? '-'}</span>
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {nstr(data.comment) && (
@@ -307,7 +315,11 @@ function ReviewDetailModal({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => del.mutate()}
+                onClick={() => {
+                  if (window.confirm('Hapus review ini secara permanen? Tindakan ini tidak dapat dibatalkan.')) {
+                    del.mutate();
+                  }
+                }}
                 disabled={del.isPending}
               >
                 <Trash2 className="mr-1 size-4" />

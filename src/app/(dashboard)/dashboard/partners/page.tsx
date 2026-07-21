@@ -253,7 +253,15 @@ function PartnerDetailModal({
                     Tolak
                   </Button>
                   <Button
-                    onClick={() => verify.mutate({ action: 'approve' })}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Setujui verifikasi mitra ini? Mitra akan dapat menerima pesanan.',
+                        )
+                      ) {
+                        verify.mutate({ action: 'approve' });
+                      }
+                    }}
                     disabled={verify.isPending}
                   >
                     <Check className="size-4" />

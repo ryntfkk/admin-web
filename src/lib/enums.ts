@@ -216,10 +216,12 @@ export function reportTypeVariant(type: string): 'info' | 'success' | 'warning' 
 }
 
 // ── Reviews ──────────────────────────────────────────────────────────
+// Backend memfilter `is_hidden = ($1 = 'true')` (AdminListReviews) — jadi nilai
+// harus 'true'/'false', BUKAN 'hidden'/'visible' (yang keduanya jatuh ke visible).
 export const REVIEW_STATUS_OPTIONS = [
   { value: '', label: 'Semua' },
-  { value: 'visible', label: 'Visible' },
-  { value: 'hidden', label: 'Hidden' },
+  { value: 'false', label: 'Visible' },
+  { value: 'true', label: 'Hidden' },
 ];
 
 export function starRatingVariant(rating: number): 'success' | 'warning' | 'info' | 'neutral' {

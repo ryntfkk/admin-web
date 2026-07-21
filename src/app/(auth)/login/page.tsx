@@ -57,10 +57,15 @@ export default function LoginPage() {
           method: 'POST',
           body: JSON.stringify({ target_role: ADMIN_ROLE }),
         });
-        if (sw.success && sw.data) {
-          if (sw.data.access_token) access_token = sw.data.access_token;
-          if (sw.data.user) user = sw.data.user;
+        // JANGAN jatuh ke login() dgn token non-admin bila switch gagal — semua
+        // /admin/* akan 403 & dashboard rusak tanpa pesan. Batalkan & beri error.
+        if (!sw.success || !sw.data) {
+          useAuthStore.getState().logout();
+          setError(getErrorMessage(sw) || 'Gagal mengaktifkan peran admin. Coba lagi.');
+          return;
         }
+        if (sw.data.access_token) access_token = sw.data.access_token;
+        if (sw.data.user) user = sw.data.user;
       }
 
       login(user, access_token);

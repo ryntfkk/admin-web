@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { silentRefresh, fetchAPI } from '@/lib/api';
 import { useAuthStore, AdminUser } from '@/lib/store/authStore';
+import { ADMIN_ROLE } from '@/lib/constants';
 
 /**
  * AuthProvider — runs ONCE on app start to attempt a silent token refresh
@@ -16,6 +17,7 @@ import { useAuthStore, AdminUser } from '@/lib/store/authStore';
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const ran = useRef(false);
   const login = useAuthStore((s) => s.login);
+  const logout = useAuthStore((s) => s.logout);
   const finishInitialization = useAuthStore((s) => s.finishInitialization);
 
   useEffect(() => {
@@ -40,18 +42,27 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
             : null;
 
         const token = useAuthStore.getState().accessToken;
-        if (user && token) {
+        // Panel ini KHUSUS admin. Jalur bootstrap ini adalah gerbang sebenarnya
+        // (guard dashboard hanya cek isAuthenticated), jadi cek role WAJIB di
+        // sini — kalau tidak, pelanggan/mitra mana pun yang punya cookie refresh
+        // (domain sama) langsung masuk shell admin. Cocok dgn cek di login page.
+        const isAdmin =
+          !!user &&
+          (user.active_role === ADMIN_ROLE || (user.roles || []).includes(ADMIN_ROLE));
+        if (user && token && isAdmin) {
           login(user, token);
           return;
         }
-        finishInitialization();
+        // Sesi valid tapi bukan admin (atau data tak lengkap) → buang token &
+        // tetap tak terautentikasi.
+        logout();
       } catch {
         finishInitialization();
       }
     }
 
     init();
-  }, [finishInitialization, login]);
+  }, [finishInitialization, login, logout]);
 
   return <>{children}</>;
 }

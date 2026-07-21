@@ -661,7 +661,9 @@ function ServiceEditor({
                         )}
                         <button
                           type="button"
-                          onClick={() => deletePhoto.mutate(photo.id)}
+                          onClick={() => {
+                            if (window.confirm('Hapus foto ini?')) deletePhoto.mutate(photo.id);
+                          }}
                           className="rounded bg-red-500/80 p-1.5 text-white hover:bg-red-500"
                           title="Hapus foto"
                         >

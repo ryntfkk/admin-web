@@ -39,10 +39,14 @@ export default function ReportsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['reports', status, targetType, search, page],
+    // `search` sengaja TIDAK dikirim ke server: backend ListReports tidak
+    // mendukung pencarian teks bebas (hanya status & target_type). Sebelumnya
+    // param `search` dikirim & diabaikan → kotak "Cari" seolah rusak. Sekarang
+    // difilter di klien atas baris yang termuat.
+    queryKey: ['reports', status, targetType, page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<ReportRow>>(
-        `/admin/reports${qs({ status, target_type: targetType, search, page, per_page: PER_PAGE })}`,
+        `/admin/reports${qs({ status, target_type: targetType, page, per_page: PER_PAGE })}`,
       );
       if (!res.success || !res.data) throw new Error(getErrorMessage(res));
       return res.data;
@@ -51,6 +55,15 @@ export default function ReportsPage() {
 
   const rows = data?.data ?? [];
   const total = data?.pagination?.total ?? 0;
+
+  const q = search.trim().toLowerCase();
+  const filteredRows = q
+    ? rows.filter((r) =>
+        [r.reporter_name, r.reason_category, nstr(r.description)].some((v) =>
+          (v ?? '').toLowerCase().includes(q),
+        ),
+      )
+    : rows;
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -107,7 +120,7 @@ export default function ReportsPage() {
 
       {isLoading ? (
         <CenteredSpinner />
-      ) : rows.length === 0 ? (
+      ) : filteredRows.length === 0 ? (
         <EmptyState title="Tidak ada laporan" note="Belum ada laporan untuk filter ini." />
       ) : (
         <>
@@ -124,7 +137,7 @@ export default function ReportsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-mono text-xs">
                     {r.id.substring(0, 8)}...
@@ -405,6 +418,24 @@ function ReportChatPanel({ reportId }: { reportId: string }) {
             );
           })
         )}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {[
+          'Halo, terima kasih atas laporannya. Bisa dijelaskan lebih detail?',
+          'Mohon lampirkan bukti (foto / tangkapan layar).',
+          'Laporan Anda sedang kami tinjau. Mohon tunggu maksimal 1x24 jam.',
+          'Terima kasih, laporan Anda sudah kami tindak lanjuti.',
+        ].map((c, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setInput(c)}
+            title={c}
+            className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+          >
+            {c.length > 32 ? c.slice(0, 32) + '…' : c}
+          </button>
+        ))}
       </div>
       <div className="mt-2 flex items-end gap-2">
         <Textarea

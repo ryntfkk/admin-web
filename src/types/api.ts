@@ -57,6 +57,8 @@ export interface DashboardStats {
     total_customers: number;
     active_orders: number;
     open_disputes: number;
+    /** Laporan/CS berstatus OPEN/REVIEWING yang butuh tindakan admin. */
+    open_reports: number;
   };
   today: {
     new_orders: number;
@@ -65,5 +67,7 @@ export interface DashboardStats {
   };
   financial: {
     pending_withdrawals: number;
+    /** Jumlah (count) withdrawal berstatus PENDING. */
+    pending_withdrawals_count: number;
   };
 }

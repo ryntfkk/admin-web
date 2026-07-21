@@ -40,6 +40,32 @@ export async function silentRefresh(): Promise<boolean> {
   return refreshAccessToken();
 }
 
+/**
+ * Parse a Response into ApiResponse<T> WITHOUT assuming a JSON body exists.
+ * A 204 No Content / empty body from a successful mutation (e.g. DELETE) has no
+ * envelope; `response.json()` would throw and the outer catch would turn a real
+ * success into a fake "Network error". Treat empty/non-JSON bodies by status.
+ */
+async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
+  if (response.status === 204) {
+    return { success: response.ok };
+  }
+  const text = await response.text();
+  if (!text) {
+    return response.ok
+      ? { success: true }
+      : { success: false, error: `HTTP ${response.status}` };
+  }
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    // Non-JSON body (proxy/HTML error page, etc.).
+    return response.ok
+      ? { success: true }
+      : { success: false, error: `HTTP ${response.status}` };
+  }
+}
+
 // ── Core fetch helper ───────────────────────────────────────────────
 export async function fetchAPI<T>(
   endpoint: string,
@@ -79,13 +105,13 @@ export async function fetchAPI<T>(
           credentials: options.credentials || 'include',
           headers: retryHeaders,
         });
-        return retry.json();
+        return parseResponse<T>(retry);
       }
 
       useAuthStore.getState().logout();
     }
 
-    return response.json();
+    return parseResponse<T>(response);
   } catch (error) {
     console.error(`API Error on ${endpoint}:`, error);
     return { success: false, error: 'Network error or server unreachable' };

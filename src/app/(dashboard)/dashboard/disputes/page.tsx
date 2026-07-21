@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Eye, Paperclip, MessageSquare } from 'lucide-react';
+import { Eye, Paperclip, MessageSquare, Send } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -188,10 +188,16 @@ function DisputeDetailModal({
 
   const resolve = useMutation({
     mutationFn: async () => {
+      // Gunakan nilai ter-GATE sesuai resolution_type: field yang tersembunyi di
+      // UI HARUS terkirim 0. Tanpa ini, nominal basi (mis. refund yang diisi lalu
+      // pindah ke PAY_PARTNER) tetap ikut terkirim → refund tak sengaja dicairkan
+      // (backend hanya membatasi plafon total, bukan maksud admin).
+      const isRefund = resolutionType === 'FULL_REFUND' || resolutionType === 'PARTIAL_REFUND';
+      const isPayout = resolutionType === 'PAY_PARTNER' || resolutionType === 'PARTIAL_REFUND';
       const body = {
         resolution_type: resolutionType,
-        refund_amount: Number(refundAmount) || 0,
-        partner_payout: Number(partnerPayout) || 0,
+        refund_amount: isRefund ? Number(refundAmount) || 0 : 0,
+        partner_payout: isPayout ? Number(partnerPayout) || 0 : 0,
         admin_notes: adminNotes,
       };
       const res = await fetchAPI(`/admin/disputes/${disputeId}/resolve`, {
@@ -296,6 +302,10 @@ function DisputeDetailModal({
               </div>
             </div>
           )}
+
+          {/* Ruang sengketa tripartit: admin bisa melihat & memfasilitasi
+              percakapan pelanggan ↔ mitra langsung dari sini. */}
+          <DisputeChat disputeId={disputeId} />
 
           {status === 'RESOLVED' || status === 'CLOSED' ? (
             <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
@@ -421,6 +431,127 @@ function Field({ label, value }: { label: string; value: string }) {
     <div>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <p className="mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+interface DisputeMessage {
+  id: string;
+  sender_role: 'customer' | 'partner' | 'admin';
+  sender_name: string;
+  content: string;
+  message_type: string;
+  created_at: string;
+}
+
+const DM_ROLE_LABEL: Record<string, string> = {
+  customer: 'Pelanggan',
+  partner: 'Mitra',
+  admin: 'Admin CS',
+};
+
+// Balasan cepat CS (canned reply) — klik untuk mengisi kotak pesan.
+const CANNED_REPLIES = [
+  'Halo, terima kasih. Bisa dijelaskan kronologinya lebih detail?',
+  'Mohon lampirkan bukti (foto / tangkapan layar) agar bisa kami tindak lanjuti.',
+  'Kami sedang meninjau sengketa ini. Mohon tunggu maksimal 1x24 jam.',
+  'Terima kasih, sengketa akan kami putuskan berdasarkan bukti kedua pihak.',
+];
+
+// Ruang sengketa tripartit — admin membaca percakapan pelanggan↔mitra dan bisa
+// ikut membalas sebagai "Admin CS". Polling ringan (5s) untuk update near-realtime.
+function DisputeChat({ disputeId }: { disputeId: string }) {
+  const qc = useQueryClient();
+  const [input, setInput] = useState('');
+
+  const { data: messages } = useQuery({
+    queryKey: ['dispute-messages', disputeId],
+    refetchInterval: 5000,
+    queryFn: async () => {
+      const res = await fetchAPI<DisputeMessage[]>(`/admin/disputes/${disputeId}/messages`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data ?? [];
+    },
+  });
+
+  const send = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/disputes/${disputeId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ content: input.trim(), message_type: 'text' }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      setInput('');
+      qc.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="rounded-lg border border-border">
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <MessageSquare className="size-4 text-muted-foreground" />
+        <p className="text-sm font-medium">Ruang Sengketa (Pelanggan + Mitra + Admin)</p>
+      </div>
+      <div className="max-h-64 space-y-2 overflow-y-auto p-3">
+        {!messages ? (
+          <p className="text-center text-xs text-muted-foreground">Memuat…</p>
+        ) : messages.length === 0 ? (
+          <p className="text-center text-xs text-muted-foreground">Belum ada pesan.</p>
+        ) : (
+          messages.map((m) => {
+            const isAdmin = m.sender_role === 'admin';
+            return (
+              <div key={m.id} className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                <span className="text-[10px] font-semibold text-muted-foreground">
+                  {DM_ROLE_LABEL[m.sender_role] || m.sender_name}
+                </span>
+                <div
+                  className={`max-w-[85%] rounded-lg px-3 py-1.5 text-sm ${
+                    isAdmin ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                  }`}
+                >
+                  {m.content}
+                </div>
+                <span className="text-[10px] text-muted-foreground">{formatDateTime(m.created_at)}</span>
+              </div>
+            );
+          })
+        )}
+      </div>
+      <div className="flex flex-wrap gap-1.5 border-t border-border px-2 pt-2">
+        {CANNED_REPLIES.map((c, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setInput(c)}
+            title={c}
+            className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+          >
+            {c.length > 32 ? c.slice(0, 32) + '…' : c}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-end gap-2 p-2">
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          rows={1}
+          placeholder="Balas sebagai Admin CS…"
+          className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (input.trim()) send.mutate();
+            }
+          }}
+        />
+        <Button size="sm" disabled={!input.trim() || send.isPending} onClick={() => send.mutate()}>
+          <Send className="size-4" />
+        </Button>
+      </div>
     </div>
   );
 }

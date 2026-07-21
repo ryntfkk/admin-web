@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Search, ShieldBan, ShieldCheck, Cog, Camera, Pencil, MapPin, Trash2, KeyRound } from 'lucide-react';
+import { Search, ShieldBan, ShieldCheck, Cog, Camera, Pencil, MapPin, Trash2, KeyRound, Wallet } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -235,8 +235,10 @@ function UserDetailModal({
 }) {
   const qc = useQueryClient();
   const [mode, setMode] = useState<
-    'view' | 'suspend' | 'unsuspend' | 'changePhoto' | 'editProfile' | 'editAddress' | 'resetPassword'
+    'view' | 'suspend' | 'unsuspend' | 'changePhoto' | 'editProfile' | 'editAddress' | 'resetPassword' | 'adjustWallet'
   >('view');
+  // Sesuaikan saldo (kontrol transaksi admin)
+  const [adjustForm, setAdjustForm] = useState({ type: 'CREDIT', amount: '', reason: '' });
   const [tab, setTab] = useState<TabKey>('profil');
   const [duration, setDuration] = useState('24');
   const [reason, setReason] = useState('');
@@ -426,6 +428,28 @@ function UserDetailModal({
     },
     onSuccess: () => {
       toast.success('Akun diaktifkan kembali');
+      invalidate();
+      onChanged();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const adjustWallet = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/users/${userId}/wallet/adjust`, {
+        method: 'POST',
+        body: JSON.stringify({
+          type: adjustForm.type,
+          amount: Number(adjustForm.amount) || 0,
+          reason: adjustForm.reason.trim(),
+        }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Saldo berhasil disesuaikan');
+      setAdjustForm({ type: 'CREDIT', amount: '', reason: '' });
+      setMode('view');
       invalidate();
       onChanged();
     },
@@ -667,6 +691,51 @@ function UserDetailModal({
             </Button>
           </div>
         </div>
+      ) : mode === 'adjustWallet' ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm">
+            Saldo saat ini: <span className="font-semibold">{formatIDR(data.balance)}</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Jenis penyesuaian</Label>
+            <Select
+              value={adjustForm.type}
+              onChange={(e) => setAdjustForm((f) => ({ ...f, type: e.target.value }))}
+            >
+              <option value="CREDIT">Tambah saldo (CREDIT)</option>
+              <option value="DEBIT">Kurangi saldo (DEBIT)</option>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Nominal (Rp)</Label>
+            <Input
+              type="number"
+              min="1"
+              value={adjustForm.amount}
+              onChange={(e) => setAdjustForm((f) => ({ ...f, amount: e.target.value }))}
+              placeholder="50000"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Alasan (wajib — tercatat di audit log)</Label>
+            <Textarea
+              value={adjustForm.reason}
+              onChange={(e) => setAdjustForm((f) => ({ ...f, reason: e.target.value }))}
+              placeholder="mis. Kompensasi keluhan / koreksi refund manual"
+            />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button variant="ghost" onClick={() => setMode('view')}>
+              Kembali
+            </Button>
+            <Button
+              disabled={!adjustForm.reason.trim() || !(Number(adjustForm.amount) > 0) || adjustWallet.isPending}
+              onClick={() => adjustWallet.mutate()}
+            >
+              {adjustWallet.isPending ? 'Memproses...' : 'Terapkan'}
+            </Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -772,6 +841,17 @@ function UserDetailModal({
                   >
                     <KeyRound className="size-4" />
                     Reset Password
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setAdjustForm({ type: 'CREDIT', amount: '', reason: '' });
+                      setMode('adjustWallet');
+                    }}
+                  >
+                    <Wallet className="size-4" />
+                    Sesuaikan Saldo
                   </Button>
                 </div>
               )}
