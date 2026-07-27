@@ -2,19 +2,19 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, CornerDownRight } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
 import type { Category } from '@/types/admin';
-import { nstr } from '@/lib/sql';
+import { nstr, nuuid } from '@/lib/sql';
 import { toast } from '@/lib/store/toastStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { DataTable, type Column } from '@/components/ui/data-table';
 import { FileUpload } from '@/components/ui/file-upload';
 
 export default function CategoriesPage() {
@@ -24,7 +24,7 @@ export default function CategoriesPage() {
     cat: null,
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const res = await fetchAPI<Category[]>('/admin/categories');
@@ -34,13 +34,67 @@ export default function CategoriesPage() {
   });
 
   const rows = data ?? [];
+  // Kategori utama (parent_id null) — dipakai untuk dropdown "induk" di editor.
+  const mainCategories = rows.filter((c) => !nuuid(c.parent_id));
+
+  const columns: Column<Category>[] = [
+    {
+      key: 'icon',
+      header: 'Ikon',
+      width: '64px',
+      cell: (c) =>
+        nstr(c.icon_url) ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={nstr(c.icon_url)!} alt={c.name} className="size-8 rounded object-cover" />
+        ) : (
+          <div className="size-8 rounded bg-muted" />
+        ),
+    },
+    {
+      key: 'name',
+      header: 'Nama',
+      cell: (c) => {
+        const isSub = !!nuuid(c.parent_id);
+        return (
+          <div className="min-w-0">
+            <div className={isSub ? 'flex items-center gap-1.5 pl-4' : ''}>
+              {isSub && <CornerDownRight className="size-3.5 shrink-0 text-muted-foreground" />}
+              <span className="font-medium">{c.name}</span>
+            </div>
+            {nstr(c.slug) && (
+              <p className={`text-xs text-muted-foreground ${isSub ? 'pl-9' : ''}`}>/{nstr(c.slug)}</p>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'type',
+      header: 'Jenis',
+      cell: (c) =>
+        nuuid(c.parent_id) ? (
+          <Badge variant="neutral">Sub · {nstr(c.parent_name) ?? '—'}</Badge>
+        ) : (
+          <Badge variant="info">Utama</Badge>
+        ),
+      hideBelow: 'sm',
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (c) =>
+        c.is_active ? <Badge variant="success">Aktif</Badge> : <Badge variant="neutral">Nonaktif</Badge>,
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kategori</h1>
-          <p className="text-sm text-muted-foreground">Kelola kategori layanan</p>
+          <p className="text-sm text-muted-foreground">
+            Kelola kategori &amp; subkategori layanan (2 level) — klik baris untuk mengedit.
+          </p>
         </div>
         <Button onClick={() => setEditor({ open: true, cat: null })}>
           <Plus className="size-4" />
@@ -48,62 +102,22 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Belum ada kategori" note="Tambahkan kategori layanan pertama." />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Ikon</TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Aksi</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((c) => (
-              <TableRow key={c.id}>
-                <TableCell>
-                  {nstr(c.icon_url) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={nstr(c.icon_url)!}
-                      alt={c.name}
-                      className="size-8 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="size-8 rounded bg-muted" />
-                  )}
-                </TableCell>
-                <TableCell className="font-medium">{c.name}</TableCell>
-                <TableCell>
-                  {c.is_active ? (
-                    <Badge variant="success">Aktif</Badge>
-                  ) : (
-                    <Badge variant="neutral">Nonaktif</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditor({ open: true, cat: c })}
-                  >
-                    <Pencil className="size-4" />
-                    Edit
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data}
+        getRowId={(c) => c.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Belum ada kategori"
+        emptyNote="Tambahkan kategori layanan pertama."
+        onRowClick={(c) => setEditor({ open: true, cat: c })}
+        showDensityToggle={false}
+      />
 
       {editor.open && (
         <CategoryEditor
           cat={editor.cat}
+          mains={mainCategories}
           onClose={() => setEditor({ open: false, cat: null })}
           onSaved={() => {
             setEditor({ open: false, cat: null });
@@ -117,10 +131,12 @@ export default function CategoriesPage() {
 
 function CategoryEditor({
   cat,
+  mains,
   onClose,
   onSaved,
 }: {
   cat: Category | null;
+  mains: Category[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -129,6 +145,12 @@ function CategoryEditor({
   const [iconUrl, setIconUrl] = useState(cat ? nstr(cat.icon_url) ?? '' : '');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isActive, setIsActive] = useState(cat?.is_active ?? true);
+  const [parentId, setParentId] = useState(cat ? nuuid(cat.parent_id) ?? '' : '');
+  const [slug, setSlug] = useState(cat ? nstr(cat.slug) ?? '' : '');
+  const [sortOrder, setSortOrder] = useState<string>(cat ? String(cat.sort_order ?? 0) : '0');
+
+  // Saat mengedit, jangan tawarkan diri sendiri sebagai induk (cegah siklus).
+  const parentOptions = mains.filter((m) => m.id !== cat?.id);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -145,7 +167,14 @@ function CategoryEditor({
         }
       }
 
-      const body = { name, icon_url: finalIconUrl || null, is_active: isActive };
+      const body = {
+        name,
+        icon_url: finalIconUrl || null,
+        is_active: isActive,
+        parent_id: parentId || null,
+        slug: slug.trim() || undefined, // kosong → backend generate dari nama
+        sort_order: Number.parseInt(sortOrder, 10) || 0,
+      };
       const res = isEdit
         ? await fetchAPI(`/admin/categories/${cat!.id}`, {
             method: 'PUT',
@@ -168,14 +197,49 @@ function CategoryEditor({
           <Label>Nama</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kebersihan" />
         </div>
+
+        {/* Kategori induk: kosong = kategori utama, pilih = subkategori. */}
+        <div className="flex flex-col gap-1.5">
+          <Label>Kategori Induk</Label>
+          <Select value={parentId} onChange={(e) => setParentId(e.target.value)}>
+            <option value="">— Kategori Utama (tanpa induk) —</option>
+            {parentOptions.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Pilih induk untuk menjadikannya subkategori (mis. induk “Events” untuk “Fotografi”).
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <Label>Slug (opsional)</Label>
+            <Input
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="otomatis dari nama"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>Urutan Tampil</Label>
+            <Input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              placeholder="0"
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-1.5">
           <Label>Ikon Kategori</Label>
           <div className="flex items-center gap-4">
             <FileUpload
-              fileType="category_icon"
               currentUrl={iconUrl || undefined}
               onFileSelect={(file) => setSelectedFile(file)}
-              onUploaded={(url) => setIconUrl(url)}
               onRemove={() => setIconUrl('')}
               previewWidth={80}
               previewHeight={80}

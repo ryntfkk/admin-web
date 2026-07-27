@@ -9,9 +9,8 @@ import { getErrorMessage } from '@/types/api';
 import type { ChatRoomRow, ChatMessageRow } from '@/types/admin';
 import { nstr, ntime } from '@/lib/sql';
 import { formatDateTime } from '@/lib/format';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { CenteredSpinner } from '@/components/ui/feedback';
+import { DataTable, type Column } from '@/components/ui/data-table';
 
 const PER_PAGE = 20;
 
@@ -19,7 +18,7 @@ export default function ChatPage() {
   const [page, setPage] = useState(1);
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['chat-rooms', page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<ChatRoomRow>>(
@@ -30,69 +29,84 @@ export default function ChatPage() {
     },
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
+  const columns: Column<ChatRoomRow>[] = [
+    {
+      key: 'customer',
+      header: 'Pelanggan',
+      cell: (r) => (
+        <span className="flex items-center gap-2 font-medium">
+          <User className="size-4 text-muted-foreground" />
+          {r.customer_name}
+        </span>
+      ),
+    },
+    {
+      key: 'partner',
+      header: 'Mitra',
+      cell: (r) => (
+        <span className="flex items-center gap-2 text-muted-foreground">
+          <User className="size-4" />
+          {r.partner_name}
+        </span>
+      ),
+    },
+    {
+      key: 'last',
+      header: 'Pesan terakhir',
+      cell: (r) => (
+        <span className="block max-w-[250px] truncate text-muted-foreground">
+          {nstr(r.last_message) || '-'}
+        </span>
+      ),
+      hideBelow: 'md',
+    },
+    {
+      key: 'time',
+      header: 'Tanggal',
+      cell: (r) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {ntime(r.last_message_at) ? formatDateTime(ntime(r.last_message_at)!) : '-'}
+        </span>
+      ),
+      hideBelow: 'lg',
+    },
+    {
+      key: 'open',
+      header: '',
+      align: 'right',
+      cell: (r) => (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+          <MessageSquare className="size-3.5" />
+          {selectedRoom === r.id ? 'Tutup' : 'Lihat'}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
-        <p className="text-sm text-muted-foreground">Lihat percakapan chat pengguna</p>
+        <p className="text-sm text-muted-foreground">
+          Percakapan pelanggan ↔ mitra. Klik baris untuk membuka isinya — setiap akses baca tercatat
+          di Audit Log.
+        </p>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Tidak ada chat" note="Belum ada percakapan chat." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pelanggan</TableHead>
-                <TableHead>Mitra</TableHead>
-                <TableHead>Pesan Terakhir</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((room) => (
-                <TableRow key={room.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <User className="size-4 text-muted-foreground" />
-                      {room.customer_name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <User className="size-4 text-muted-foreground" />
-                      {room.partner_name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="max-w-[250px] truncate text-muted-foreground">
-                    {nstr(room.last_message) || '-'}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {ntime(room.last_message_at) ? formatDateTime(ntime(room.last_message_at)!) : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <button
-                      onClick={() => setSelectedRoom(selectedRoom === room.id ? null : room.id)}
-                      className="flex items-center gap-1 rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/20"
-                    >
-                      <MessageSquare className="size-4" />
-                      {selectedRoom === room.id ? 'Tutup' : 'Lihat'}
-                    </button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(r) => r.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Tidak ada chat"
+        emptyNote="Belum ada percakapan chat."
+        onRowClick={(room) => setSelectedRoom(selectedRoom === room.id ? null : room.id)}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
 
       {selectedRoom && <ChatHistory roomId={selectedRoom} />}
     </div>

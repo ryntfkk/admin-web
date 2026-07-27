@@ -1,14 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpDown, Wallet } from 'lucide-react';
+import { ArrowUpDown, DollarSign, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
-import type { FinancialSummary, WalletRow, AllTransactionRow } from '@/types/admin';
+import type { AllTransactionRow, FinancialSummary, WalletRow } from '@/types/admin';
 import { nstr } from '@/lib/sql';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatIDRorDash as formatIDR } from '@/lib/format';
 import {
   WALLET_TX_CATEGORY_LABELS,
   WALLET_TX_TYPE_LABELS,
@@ -16,24 +18,34 @@ import {
   walletTxTypeVariant,
   walletTxStatusVariant,
 } from '@/lib/enums';
-import { Select } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
+import { DataTable, type Column } from '@/components/ui/data-table';
+import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
+import { CenteredSpinner } from '@/components/ui/feedback';
 
 const PER_PAGE = 20;
 
 export default function FinancialPage() {
-  const [category, setCategory] = useState('');
-  const [txType, setTxType] = useState('');
-  const [status, setStatus] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const tabs: EntityTab[] = [
+    { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab /> },
+    { id: 'ledger', label: 'Ledger', content: <LedgerTab /> },
+    { id: 'saldo', label: 'Saldo Pengguna', content: <WalletsTab /> },
+  ];
 
-  // Fetch summary
-  const { data: summary, isLoading: summaryLoading } = useQuery({
+  return (
+    <EntityPage
+      title="Keuangan"
+      subtitle="Ringkasan finansial, ledger transaksi dompet, dan saldo per pengguna."
+      tabs={tabs}
+      className="max-w-7xl"
+    />
+  );
+}
+
+function SummaryTab() {
+  const { data, isLoading } = useQuery({
     queryKey: ['financial-summary'],
     queryFn: async () => {
       const res = await fetchAPI<FinancialSummary>('/admin/financial/summary');
@@ -42,8 +54,54 @@ export default function FinancialPage() {
     },
   });
 
-  // Fetch transactions
-  const { data, isLoading } = useQuery({
+  if (isLoading) return <CenteredSpinner />;
+  if (!data) return null;
+
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+      <SummaryCard
+        title="Total Pendapatan"
+        value={formatIDR(data.total_earnings)}
+        icon={<TrendingUp className="size-5 text-success" />}
+        variant="success"
+      />
+      <SummaryCard
+        title="Total Refund"
+        value={formatIDR(data.total_refunds)}
+        icon={<TrendingDown className="size-5 text-destructive" />}
+        variant="danger"
+      />
+      <SummaryCard
+        title="Total Penarikan"
+        value={formatIDR(data.total_withdrawals)}
+        icon={<ArrowUpDown className="size-5 text-warning" />}
+        variant="warning"
+      />
+      <SummaryCard
+        title="Total Pembayaran"
+        value={formatIDR(data.total_payments)}
+        icon={<Wallet className="size-5 text-info" />}
+        variant="info"
+      />
+      <SummaryCard
+        title="Total Top-up"
+        value={formatIDR(data.total_topups)}
+        icon={<DollarSign className="size-5 text-muted-foreground" />}
+        variant="default"
+      />
+    </div>
+  );
+}
+
+function LedgerTab() {
+  const [category, setCategory] = useState('');
+  const [txType, setTxType] = useState('');
+  const [status, setStatus] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebouncedValue(searchInput, 300);
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, error } = useQuery({
     queryKey: ['financial-transactions', category, txType, status, search, page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<AllTransactionRow>>(
@@ -54,70 +112,88 @@ export default function FinancialPage() {
     },
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
-
-  const formatIDR = (amount: number | null | undefined) => {
-    if (!amount && amount !== 0) return '-';
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+  const columns: Column<AllTransactionRow>[] = [
+    {
+      key: 'time',
+      header: 'Tanggal',
+      cell: (t) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {formatDateTime(t.created_at)}
+        </span>
+      ),
+    },
+    { key: 'user', header: 'User', cell: (t) => <span className="font-medium">{t.user_name}</span> },
+    {
+      key: 'category',
+      header: 'Kategori',
+      cell: (t) => (
+        <Badge variant="info">{WALLET_TX_CATEGORY_LABELS[t.category] || t.category}</Badge>
+      ),
+      hideBelow: 'md',
+    },
+    {
+      key: 'type',
+      header: 'Tipe',
+      cell: (t) => (
+        <Badge variant={walletTxTypeVariant(t.type)}>
+          {WALLET_TX_TYPE_LABELS[t.type] || t.type}
+        </Badge>
+      ),
+    },
+    {
+      key: 'amount',
+      header: 'Jumlah',
+      align: 'right',
+      cell: (t) => (
+        <span
+          className={`tabular-nums ${t.type === 'CREDIT' ? 'text-success' : 'text-destructive'}`}
+        >
+          {t.type === 'CREDIT' ? '+' : '-'}
+          {formatIDR(t.amount)}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (t) => (
+        <Badge variant={walletTxStatusVariant(t.status)}>
+          {WALLET_TX_STATUS_LABELS[t.status] || t.status}
+        </Badge>
+      ),
+      hideBelow: 'sm',
+    },
+    {
+      key: 'desc',
+      header: 'Deskripsi',
+      cell: (t) => (
+        <span className="block max-w-[200px] truncate text-muted-foreground">
+          {nstr(t.description) || '-'}
+        </span>
+      ),
+      hideBelow: 'lg',
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Keuangan</h1>
-        <p className="text-sm text-muted-foreground">Overview finansial platform</p>
-      </div>
-
-      {/* Summary Cards */}
-      {summaryLoading ? (
-        <CenteredSpinner />
-      ) : summary ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-          <SummaryCard
-            title="Total Pendapatan"
-            value={formatIDR(summary.total_earnings)}
-            icon={<TrendingUp className="size-5 text-emerald-500" />}
-            variant="success"
-          />
-          <SummaryCard
-            title="Total Refund"
-            value={formatIDR(summary.total_refunds)}
-            icon={<TrendingDown className="size-5 text-rose-500" />}
-            variant="danger"
-          />
-          <SummaryCard
-            title="Total Penarikan"
-            value={formatIDR(summary.total_withdrawals)}
-            icon={<ArrowUpDown className="size-5 text-amber-500" />}
-            variant="warning"
-          />
-          <SummaryCard
-            title="Total Pembayaran"
-            value={formatIDR(summary.total_payments)}
-            icon={<Wallet className="size-5 text-blue-500" />}
-            variant="info"
-          />
-          <SummaryCard
-            title="Total Top-up"
-            value={formatIDR(summary.total_topups)}
-            icon={<DollarSign className="size-5 text-purple-500" />}
-            variant="default"
-          />
-        </div>
-      ) : null}
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-medium">Filter:</span>
+    <DataTable
+      columns={columns}
+      rows={data?.data}
+      getRowId={(t) => t.id}
+      isLoading={isLoading}
+      error={error}
+      emptyTitle="Tidak ada transaksi"
+      emptyNote="Belum ada transaksi untuk filter ini."
+      page={page}
+      perPage={PER_PAGE}
+      total={data?.pagination?.total ?? 0}
+      onPageChange={setPage}
+      toolbar={
+        <>
           <div className="w-36">
             <Select
               value={category}
+              aria-label="Filter kategori"
               onChange={(e) => {
                 setCategory(e.target.value);
                 setPage(1);
@@ -134,6 +210,7 @@ export default function FinancialPage() {
           <div className="w-32">
             <Select
               value={txType}
+              aria-label="Filter tipe"
               onChange={(e) => {
                 setTxType(e.target.value);
                 setPage(1);
@@ -147,6 +224,7 @@ export default function FinancialPage() {
           <div className="w-32">
             <Select
               value={status}
+              aria-label="Filter status"
               onChange={(e) => {
                 setStatus(e.target.value);
                 setPage(1);
@@ -158,74 +236,100 @@ export default function FinancialPage() {
               <option value="FAILED">Gagal</option>
             </Select>
           </div>
-          <div className="w-48">
+          <div className="min-w-48 flex-1">
             <Input
-              placeholder="Cari nama user..."
-              value={search}
+              placeholder="Cari nama user…"
+              aria-label="Cari transaksi"
+              value={searchInput}
               onChange={(e) => {
-                setSearch(e.target.value);
+                setSearchInput(e.target.value);
                 setPage(1);
               }}
             />
           </div>
-        </div>
-      </div>
-
-      {/* Transactions Table */}
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Tidak ada transaksi" note="Belum ada transaksi untuk filter ini." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Tipe</TableHead>
-                <TableHead>Jumlah</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Deskripsi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((tx) => (
-                <TableRow key={tx.id}>
-                  <TableCell className="whitespace-nowrap text-muted-foreground">
-                    {formatDateTime(tx.created_at)}
-                  </TableCell>
-                  <TableCell className="font-medium">{tx.user_name}</TableCell>
-                  <TableCell>
-                    <Badge variant="info">
-                      {WALLET_TX_CATEGORY_LABELS[tx.category] || tx.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={walletTxTypeVariant(tx.type)}>
-                      {WALLET_TX_TYPE_LABELS[tx.type] || tx.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className={tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-rose-600'}>
-                    {tx.type === 'CREDIT' ? '+' : '-'}
-                    {formatIDR(tx.amount)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={walletTxStatusVariant(tx.status)}>
-                      {WALLET_TX_STATUS_LABELS[tx.status] || tx.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-muted-foreground">
-                    {nstr(tx.description) || '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
         </>
-      )}
+      }
+    />
+  );
+}
+
+/**
+ * Saldo per pengguna.
+ *
+ * Memakai `GET /admin/financial/wallets` yang sudah lama ada di backend tapi
+ * TIDAK pernah dipanggil UI mana pun — sehingga admin bisa menyesuaikan saldo
+ * seseorang tanpa pernah bisa melihat daftar saldo seluruh platform.
+ */
+function WalletsTab() {
+  const router = useRouter();
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['financial-wallets', page],
+    queryFn: async () => {
+      const res = await fetchAPI<PaginatedData<WalletRow>>(
+        `/admin/financial/wallets${qs({ page, per_page: PER_PAGE })}`,
+      );
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
+  const columns: Column<WalletRow>[] = [
+    {
+      key: 'user',
+      header: 'Pengguna',
+      cell: (w) => <span className="font-medium">{w.user_name}</span>,
+    },
+    {
+      key: 'credits',
+      header: 'Total masuk',
+      align: 'right',
+      cell: (w) => <span className="tabular-nums text-success">{formatIDR(w.total_credits)}</span>,
+      hideBelow: 'sm',
+    },
+    {
+      key: 'debits',
+      header: 'Total keluar',
+      align: 'right',
+      cell: (w) => (
+        <span className="tabular-nums text-destructive">{formatIDR(w.total_debits)}</span>
+      ),
+      hideBelow: 'sm',
+    },
+    {
+      key: 'balance',
+      header: 'Saldo (ledger)',
+      align: 'right',
+      cell: (w) => <span className="font-medium tabular-nums">{formatIDR(w.balance)}</span>,
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <EntitySection>
+        <p className="text-sm text-muted-foreground">
+          Angka di sini dihitung dari <strong>ledger</strong> (<code>wallet_transactions</code>):
+          total masuk dikurangi total keluar. Itu <em>bukan</em> otomatis sama dengan saldo yang bisa
+          dibelanjakan pengguna — bila keduanya berbeda, berarti ada perpindahan uang yang tak
+          tercatat di ledger dan perlu ditelusuri. Klik baris untuk melihat saldo aktual beserta
+          riwayat transaksinya.
+        </p>
+      </EntitySection>
+
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(w) => w.user_id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Belum ada data saldo"
+        onRowClick={(w) => router.push(`/dashboard/users/${w.user_id}?tab=transaksi`)}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
     </div>
   );
 }
@@ -243,19 +347,19 @@ function SummaryCard({
 }) {
   const variantStyles: Record<string, string> = {
     default: 'border-border',
-    success: 'border-emerald-200 bg-emerald-50/50',
-    danger: 'border-rose-200 bg-rose-50/50',
-    warning: 'border-amber-200 bg-amber-50/50',
-    info: 'border-blue-200 bg-blue-50/50',
+    success: 'border-success/30 bg-success/8',
+    danger: 'border-destructive/30 bg-destructive/8',
+    warning: 'border-warning/30 bg-warning/8',
+    info: 'border-info/30 bg-info/8',
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${variantStyles[variant]}`}>
-      <div className="mb-2 flex items-center justify-between">
+    <div className={`rounded-xl border p-4 ${variantStyles[variant]}`}>
+      <div className="mb-2 flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-muted-foreground">{title}</span>
         {icon}
       </div>
-      <p className="text-lg font-semibold">{value}</p>
+      <p className="text-lg font-semibold tabular-nums">{value}</p>
     </div>
   );
 }

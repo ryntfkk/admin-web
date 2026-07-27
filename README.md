@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# POSKO24 Admin
 
-## Getting Started
+Panel admin internal untuk POSKO Jasa. Berjalan **lokal** (tidak di-deploy); berbicara ke backend Go/Fiber di EC2.
 
-First, run the development server:
+> Bagian dari tiga aplikasi: `web` (Next.js di AWS Amplify) · `admin-web` (ini, lokal) · `backend` (Go di EC2).
+
+## Menjalankan
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3100
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Butuh `.env.local`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+NEXT_PUBLIC_API_URL=https://api.poskojasa.com/api/v1
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Login memakai akun ber-role `admin`. Bila `active_role` belum `admin`, halaman login otomatis memanggil `/auth/switch-role`; login dibatalkan bila peralihan gagal.
 
-## Learn More
+## Tumpukan teknologi
 
-To learn more about Next.js, take a look at the following resources:
+| Bagian | Pilihan |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) · React 19 |
+| Styling | Tailwind CSS v4 (CSS-first, token oklch di `src/app/globals.css`) + shadcn `base-nova` + `@base-ui/react` |
+| State server | TanStack Query v5 |
+| State klien | Zustand (`authStore`, `toastStore`, `commandStore`) |
+| Klien API | `fetch` sendiri di `src/lib/api.ts` (refresh 401 otomatis, sekali coba ulang) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> Baca `AGENTS.md` sebelum menulis kode: versi Next.js ini punya perubahan yang memutus kebiasaan lama, dokumentasinya ada di `node_modules/next/dist/docs/`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Struktur
 
-## Deploy on Vercel
+```
+src/
+  app/(auth)/login            halaman login
+  app/(dashboard)/            shell admin (sidebar + topbar) + semua halaman
+  components/layout/          Sidebar, SidebarNav, MobileNav, Topbar, CommandPalette
+  components/ui/              primitif: DataTable, Modal, Sheet, ConfirmDialog, Field, EntityPage, ...
+  components/providers/       Query, Auth, Theme
+  hooks/                      useDebouncedValue, useFocusTrap, useIsMounted, useLocalStorageState
+  lib/                        api, nav, enums, format, theme, store/
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Catatan penting
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Token akses hanya di memori** (Zustand, tanpa persist) — refresh token ada di cookie HttpOnly. Jangan pindahkan ke localStorage.
+- **Setiap permintaan wajib** membawa header `X-Platform` + `X-App-Version` (lihat `src/lib/constants.ts`); backend menolak bila tidak ada.
+- **`src/lib/sql.ts` adalah tambalan sementara**: sebagian endpoint admin masih mengembalikan baris sqlc mentah sehingga `sql.NullString` dkk. bocor ke JSON. Berkas ini dipensiunkan modul demi modul seiring backend memakai DTO.
+- **Kosakata status** (label + warna badge) terpusat di `src/lib/enums.ts` — jangan duplikasi di halaman.
+- **Aksi merusak** memakai `ConfirmDialog` (alasan wajib + ketik-ulang), bukan `window.confirm()`.
+- **Warna status** pakai token semantik (`success`/`warning`/`info`/`destructive`), bukan kelas palet Tailwind mentah — agar benar di tema terang maupun gelap.
+
+## Perintah
+
+```bash
+npm run dev      # server pengembangan :3100
+npm run build    # build produksi
+npm run lint     # ESLint
+npx tsc --noEmit # pemeriksaan tipe
+```

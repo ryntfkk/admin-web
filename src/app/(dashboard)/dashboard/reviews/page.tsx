@@ -8,17 +8,17 @@ import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
 import type { ReviewRow, ReviewDetailRow } from '@/types/admin';
 import { nstr, nint, ntime } from '@/lib/sql';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatIDRorDash as formatIDR } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
-import { REVIEW_STATUS_OPTIONS, starRatingVariant } from '@/lib/enums';
+import { REVIEW_STATUS_OPTIONS } from '@/lib/enums';
 import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Modal } from '@/components/ui/modal';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { CenteredSpinner } from '@/components/ui/feedback';
+import { DataTable, type Column } from '@/components/ui/data-table';
 
 const PER_PAGE = 20;
 
@@ -26,11 +26,10 @@ export default function ReviewsPage() {
   const qc = useQueryClient();
   const [hidden, setHidden] = useState('');
   const [rating, setRating] = useState('');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['reviews', hidden, rating, page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<ReviewRow>>(
@@ -41,8 +40,40 @@ export default function ReviewsPage() {
     },
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
+  const columns: Column<ReviewRow>[] = [
+    { key: 'order', header: 'Order', cell: (r) => <span className="font-mono text-xs">{r.order_number}</span> },
+    { key: 'customer', header: 'Pelanggan', cell: (r) => <span className="font-medium">{r.customer_name}</span> },
+    {
+      key: 'partner',
+      header: 'Mitra',
+      cell: (r) => <span className="text-muted-foreground">{r.partner_name}</span>,
+      hideBelow: 'md',
+    },
+    {
+      key: 'rating',
+      header: 'Rating',
+      cell: (r) => (
+        <span className="flex items-center gap-1">
+          <Star className="size-4 fill-warning text-warning" />
+          <span className="font-medium tabular-nums">{r.rating}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'hidden',
+      header: 'Tampil',
+      cell: (r) =>
+        r.is_hidden ? <Badge variant="neutral">Disembunyikan</Badge> : <Badge variant="success">Tampil</Badge>,
+    },
+    {
+      key: 'created',
+      header: 'Dibuat',
+      cell: (r) => (
+        <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(r.created_at)}</span>
+      ),
+      hideBelow: 'lg',
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -86,61 +117,20 @@ export default function ReviewsPage() {
         </div>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Tidak ada review" note="Belum ada review untuk filter ini." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Pelanggan</TableHead>
-                <TableHead>Mitra</TableHead>
-                <TableHead>Rating</TableHead>
-                <TableHead>Hidden</TableHead>
-                <TableHead>Dibuat</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">
-                    {r.order_number}
-                  </TableCell>
-                  <TableCell className="font-medium">{r.customer_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{r.partner_name}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Star className="size-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{r.rating}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {r.is_hidden ? (
-                      <Badge variant="neutral">Hidden</Badge>
-                    ) : (
-                      <Badge variant="success">Visible</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDateTime(r.created_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedId(r.id)}>
-                      <Eye className="size-4" />
-                      Detail
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(r) => r.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Tidak ada review"
+        emptyNote="Belum ada review untuk filter ini."
+        onRowClick={(r) => setSelectedId(r.id)}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
 
       {selectedId && (
         <ReviewDetailModal
@@ -165,6 +155,7 @@ function ReviewDetailModal({
   onDone: () => void;
 }) {
   const qc = useQueryClient();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['review-detail', reviewId],
@@ -241,7 +232,7 @@ function ReviewDetailModal({
                     key={star}
                     className={`size-5 ${
                       star <= data.rating
-                        ? 'fill-yellow-400 text-yellow-400'
+                        ? 'fill-warning text-warning'
                         : 'fill-muted text-muted'
                     }`}
                   />
@@ -278,7 +269,7 @@ function ReviewDetailModal({
           {nstr(data.partner_response) && (
             <div>
               <p className="text-xs font-medium text-muted-foreground">Tanggapan Mitra</p>
-              <p className="mt-1 rounded-lg border border-border bg-green-50 p-3 text-sm">
+              <p className="mt-1 rounded-lg border border-success/30 bg-success/8 p-3 text-sm">
                 {nstr(data.partner_response)}
               </p>
               {ntime(data.partner_response_at) && (
@@ -315,11 +306,7 @@ function ReviewDetailModal({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => {
-                  if (window.confirm('Hapus review ini secara permanen? Tindakan ini tidak dapat dibatalkan.')) {
-                    del.mutate();
-                  }
-                }}
+                onClick={() => setConfirmingDelete(true)}
                 disabled={del.isPending}
               >
                 <Trash2 className="mr-1 size-4" />
@@ -329,24 +316,24 @@ function ReviewDetailModal({
           </div>
         </div>
       )}
+
+      {/* Hapus review = HARD DELETE di backend (barisnya diarsipkan ke audit
+          log, tapi tidak bisa dikembalikan lewat UI). "Sembunyikan" hampir
+          selalu jawaban yang benar, jadi jalur hapus dibuat lebih berfriksi. */}
+      <ConfirmDialog
+        open={confirmingDelete}
+        onClose={() => setConfirmingDelete(false)}
+        onConfirm={() => del.mutate()}
+        variant="danger"
+        title="Hapus review ini permanen?"
+        description="Review dihapus dari database dan rating mitra dihitung ulang tanpa review ini. Bila hanya ingin menyembunyikannya dari publik, pakai tombol Sembunyikan."
+        confirmLabel="Hapus permanen"
+        requireReason
+        reasonLabel="Alasan penghapusan"
+        confirmPhrase="HAPUS"
+        loading={del.isPending}
+      />
     </Modal>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-0.5">{value}</p>
-    </div>
-  );
-}
-
-function formatIDR(amount: number | null | undefined): string {
-  if (!amount && amount !== 0) return '-';
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-  }).format(amount);
-}

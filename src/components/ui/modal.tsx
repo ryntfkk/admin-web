@@ -1,8 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useIsMounted } from '@/hooks/useIsMounted';
 
 export function Modal({
   open,
@@ -19,6 +22,11 @@ export function Modal({
   children: React.ReactNode;
   className?: string;
 }) {
+  const panelRef = useFocusTrap<HTMLDivElement>(open);
+  const mounted = useIsMounted();
+  const headingId = React.useId();
+
+
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -30,9 +38,11 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  // Di-portal ke <body> supaya overlay tidak pernah terpotong oleh container
+  // ber-scroll (<main> punya overflow-y-auto) atau tertimpa stacking context.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
       <div
         className="fixed inset-0 bg-black/50 backdrop-blur-[1px]"
@@ -40,16 +50,23 @@ export function Modal({
         aria-hidden
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? headingId : undefined}
         className={cn(
-          'relative z-10 my-8 w-full max-w-lg rounded-xl border border-border bg-card shadow-lg',
+          'relative z-10 my-8 w-full max-w-lg rounded-xl border border-border bg-card shadow-lg outline-none',
           className,
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-border p-4">
           <div className="min-w-0">
-            {title && <h2 className="font-semibold tracking-tight">{title}</h2>}
+            {title && (
+              <h2 id={headingId} className="font-semibold tracking-tight">
+                {title}
+              </h2>
+            )}
             {description && (
               <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             )}
@@ -64,6 +81,7 @@ export function Modal({
         </div>
         <div className="p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

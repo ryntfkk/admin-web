@@ -22,6 +22,13 @@ export interface PendingPartnerRow {
 export interface PartnerDetailRow extends PendingPartnerRow {
   rejection_reason: NullString;
   user_created_at: string;
+  // Dikirim oleh AdminGetPartnerDetail (queries/admin.sql) tapi dulu tak
+  // dideklarasikan di sini, jadi tak pernah tampil di UI padahal justru inilah
+  // data yang dipakai admin saat memverifikasi KYC & pembayaran.
+  decrypted_ktp: NullString | string | null;
+  bank_code: NullString;
+  bank_account_number: NullString;
+  bank_account_name: NullString;
 }
 
 // ── Disputes ────────────────────────────────────────────────────────
@@ -209,6 +216,11 @@ export interface Category {
   name: string;
   icon_url: NullString;
   is_active: boolean;
+  // Hierarki 2 level. parent_id null = kategori utama; terisi = subkategori.
+  slug: NullString;
+  sort_order: number;
+  parent_id: NullUUID;
+  parent_name: NullString;
 }
 
 // ── Users ───────────────────────────────────────────────────────────
@@ -237,7 +249,12 @@ export interface UserDetailRow {
   balance: number;
   is_suspended: boolean;
   suspended_until: NullTime;
+  roles: string[];
   active_role: string;
+  is_verified: boolean;
+  bank_code: NullString;
+  bank_account_number: NullString;
+  bank_account_name: NullString;
   created_at: string;
   deleted_at: NullTime;
 }
@@ -280,6 +297,7 @@ export interface UserAddressRow {
   city: NullString;
   district: NullString;
   province: NullString;
+  postal_code: NullString;
   lon: number | null;
   lat: number | null;
   is_default: boolean;
@@ -301,6 +319,11 @@ export interface ReportRow {
   resolved_by: NullString;
   resolution_note: NullString;
   resolved_at: NullTime;
+  // Dikirim AdminListReports tapi dulu tak dideklarasikan, sehingga penanda
+  // "ada balasan pelapor yang belum dibaca" tak pernah tampil di daftar.
+  last_message_at: NullTime;
+  last_message: string;
+  unread_count: number;
 }
 
 export interface ReportDetailRow {
@@ -460,4 +483,61 @@ export interface OrderStatusHistoryRow {
   actor_role: NullString;
   reason: NullString;
   created_at: string;
+}
+
+// ── Fase 3: kontrol penuh data ──────────────────────────────────────
+// Endpoint di bawah ini sudah memakai lapisan DTO backend (internal/admin/mapper.go),
+// jadi nilainya polos — TIDAK perlu dibongkar dengan helper di lib/sql.ts.
+
+export interface WorkingHour {
+  id: string;
+  day_of_week: string; // monday..sunday
+  open_time: string; // "HH:MM"
+  close_time: string; // "HH:MM"
+  is_open: boolean;
+}
+
+export interface PartnerDocument {
+  id: string;
+  partner_id: string;
+  doc_type: string;
+  file_url: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+  verified_by: string | null;
+  verified_at: string | null;
+  rejection_reason: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface PartnerStrike {
+  id: string;
+  order_id: string | null;
+  order_number: string | null;
+  reason: string;
+  created_at: string;
+}
+
+export interface AdminAccount {
+  id: string;
+  username: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  is_suspended: boolean;
+  created_at: string;
+}
+
+export interface PlatformSettings {
+  base_transport_fee: number;
+  transport_fee_per_km: number;
+  admin_fee: number;
+  platform_fee_rate: number; // 0.12 = 12%
+  min_transaction: number;
+  withdrawal_fee: number;
+  max_withdrawal: number;
+  max_wallet_adjustment: number;
+  updated_by: string | null;
+  updated_at: string;
 }

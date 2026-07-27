@@ -7,6 +7,16 @@ export function formatIDR(amount: number | undefined | null): string {
   }).format(n);
 }
 
+/**
+ * Sama seperti formatIDR, tapi nilai kosong jadi "-" bukan "Rp 0".
+ * Dipakai di tabel/ringkasan keuangan, di mana "belum ada data" dan "nol rupiah"
+ * artinya berbeda.
+ */
+export function formatIDRorDash(amount: number | undefined | null): string {
+  if (amount === null || amount === undefined) return '-';
+  return formatIDR(amount);
+}
+
 export function formatNumber(n: number | undefined | null): string {
   return new Intl.NumberFormat('id-ID').format(typeof n === 'number' ? n : 0);
 }

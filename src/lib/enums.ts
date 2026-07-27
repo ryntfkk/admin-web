@@ -183,6 +183,12 @@ export const REPORT_TYPE_LABELS: Record<string, string> = {
   SUPPORT: 'Bantuan CS',
 };
 
+/** Opsi filter tipe target laporan, diturunkan dari label agar tak bisa desync. */
+export const REPORT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'Semua target' },
+  ...Object.entries(REPORT_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+];
+
 export function reportStatusVariant(status: string): 'warning' | 'info' | 'success' | 'neutral' | 'danger' {
   switch (status) {
     case 'OPEN':

@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
+import CommandPalette from '@/components/layout/CommandPalette';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Toaster } from '@/components/ui/toaster';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const isInitializing = useAuthStore((s) => s.isInitializing);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -32,8 +35,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 overflow-y-auto bg-muted/30 p-5">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-muted/30 p-5">
+          {/* Satu halaman yang gagal render tidak boleh menjatuhkan seluruh shell
+              admin. `key` per-rute mereset boundary saat pindah halaman —
+              tanpa itu, pesan galat menempel di halaman berikutnya. */}
+          <ErrorBoundary key={pathname} label="Halaman ini">
+            {children}
+          </ErrorBoundary>
+        </main>
       </div>
+      <CommandPalette />
       <Toaster />
     </div>
   );

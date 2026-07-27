@@ -11,10 +11,11 @@ import { nstr } from '@/lib/sql';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DataTable, type Column } from '@/components/ui/data-table';
 
 const PER_PAGE = 20;
 
@@ -22,6 +23,7 @@ export default function WithdrawalsPage() {
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<WithdrawalRow | null>(null);
+  const [confirming, setConfirming] = useState<'approve' | 'reject' | null>(null);
   // reference_id = bukti transfer (WAJIB backend utk approve); notes = alasan tolak.
   const [refId, setRefId] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,9 +33,12 @@ export default function WithdrawalsPage() {
     setNotes('');
     setSelected(w);
   };
-  const closeProcess = () => setSelected(null);
+  const closeProcess = () => {
+    setSelected(null);
+    setConfirming(null);
+  };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['withdrawals', page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<WithdrawalRow>>(
@@ -71,67 +76,77 @@ export default function WithdrawalsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
+  const columns: Column<WithdrawalRow>[] = [
+    { key: 'user', header: 'Pengguna', cell: (w) => <span className="font-medium">{w.user_name}</span> },
+    {
+      key: 'bank',
+      header: 'Rekening',
+      cell: (w) => (
+        <span className="text-muted-foreground">
+          {nstr(w.bank_code) || '-'} · {nstr(w.bank_account_number) || '-'}
+        </span>
+      ),
+      hideBelow: 'md',
+    },
+    {
+      key: 'amount',
+      header: 'Nominal',
+      align: 'right',
+      cell: (w) => <span className="tabular-nums">{formatIDR(w.amount)}</span>,
+    },
+    {
+      key: 'fee',
+      header: 'Biaya',
+      align: 'right',
+      cell: (w) => <span className="tabular-nums text-muted-foreground">{formatIDR(w.admin_fee)}</span>,
+      hideBelow: 'sm',
+    },
+    {
+      key: 'net',
+      header: 'Transfer',
+      align: 'right',
+      cell: (w) => <span className="font-medium tabular-nums">{formatIDR(w.amount - w.admin_fee)}</span>,
+    },
+    {
+      key: 'created',
+      header: 'Diajukan',
+      cell: (w) => (
+        <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(w.created_at)}</span>
+      ),
+      hideBelow: 'lg',
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Withdrawal</h1>
-        <p className="text-sm text-muted-foreground">Penarikan dana yang menunggu diproses</p>
+        <p className="text-sm text-muted-foreground">
+          Penarikan dana yang menunggu diproses — klik baris untuk memverifikasi rekening dan
+          menandai transfer selesai.
+        </p>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Tidak ada penarikan pending" />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Pengguna</TableHead>
-                <TableHead>Rekening</TableHead>
-                <TableHead>Nominal</TableHead>
-                <TableHead>Biaya</TableHead>
-                <TableHead>Transfer</TableHead>
-                <TableHead>Diajukan</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((w) => (
-                <TableRow key={w.id}>
-                  <TableCell className="font-medium">{w.user_name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {nstr(w.bank_code) || '-'} · {nstr(w.bank_account_number) || '-'}
-                  </TableCell>
-                  <TableCell>{formatIDR(w.amount)}</TableCell>
-                  <TableCell className="text-muted-foreground">{formatIDR(w.admin_fee)}</TableCell>
-                  <TableCell className="font-medium">
-                    {formatIDR(w.amount - w.admin_fee)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDateTime(w.created_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => openProcess(w)}>
-                      Proses
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(w) => w.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Tidak ada penarikan pending"
+        emptyNote="Semua permintaan penarikan sudah diproses."
+        onRowClick={openProcess}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
 
       {selected && (
         <Modal open onClose={closeProcess} title="Proses Penarikan">
           <div className="space-y-4">
             <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-success/10 text-success">
                 <Banknote className="size-5" />
               </div>
               <div>
@@ -161,11 +176,10 @@ export default function WithdrawalsPage() {
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
                   No. Referensi / Bukti Transfer <span className="text-destructive">*</span>
                 </label>
-                <input
+                <Input
                   value={refId}
                   onChange={(e) => setRefId(e.target.value)}
                   placeholder="mis. ID transaksi bank / e-wallet"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Wajib diisi untuk menandai selesai (bukti transfer sudah dilakukan).
@@ -175,12 +189,11 @@ export default function WithdrawalsPage() {
                 <label className="mb-1 block text-xs font-medium text-muted-foreground">
                   Alasan penolakan (bila menolak)
                 </label>
-                <textarea
+                <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
                   placeholder="Alasan penolakan — tercatat & saldo dikembalikan ke pengguna"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
@@ -196,30 +209,14 @@ export default function WithdrawalsPage() {
                     toast.error('Isi alasan penolakan terlebih dahulu.');
                     return;
                   }
-                  if (
-                    window.confirm(
-                      'Tolak penarikan ini? Saldo akan dikembalikan ke pengguna.',
-                    )
-                  ) {
-                    process.mutate({ id: selected.id, action: 'reject', notes });
-                  }
+                  setConfirming('reject');
                 }}
               >
                 Tolak
               </Button>
               <Button
                 disabled={process.isPending || !refId.trim()}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Tandai penarikan ${formatIDR(
-                        selected.amount - selected.admin_fee,
-                      )} ke ${selected.user_name} selesai? Pastikan transfer sudah dilakukan — aksi ini tidak dapat dibatalkan.`,
-                    )
-                  ) {
-                    process.mutate({ id: selected.id, action: 'approve', reference_id: refId });
-                  }
-                }}
+                onClick={() => setConfirming('approve')}
               >
                 Tandai Selesai
               </Button>
@@ -227,6 +224,43 @@ export default function WithdrawalsPage() {
           </div>
         </Modal>
       )}
+
+      {/* Menandai penarikan selesai berarti uang SUDAH ditransfer di luar sistem
+          dan tidak bisa ditarik kembali — karena itu butuh ketik-ulang, bukan
+          sekadar window.confirm() yang mudah ditekan tanpa dibaca. */}
+      <ConfirmDialog
+        open={confirming === 'approve'}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => selected && process.mutate({ id: selected.id, action: 'approve', reference_id: refId })}
+        variant="danger"
+        title="Tandai penarikan selesai?"
+        description={
+          selected && (
+            <>
+              Menyatakan transfer{' '}
+              <strong className="text-foreground">
+                {formatIDR(selected.amount - selected.admin_fee)}
+              </strong>{' '}
+              ke <strong className="text-foreground">{selected.user_name}</strong> sudah dilakukan.
+              Pastikan bukti transfer benar — aksi ini tidak dapat dibatalkan.
+            </>
+          )
+        }
+        confirmLabel="Tandai selesai"
+        confirmPhrase={selected?.user_name}
+        loading={process.isPending}
+      />
+
+      <ConfirmDialog
+        open={confirming === 'reject'}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => selected && process.mutate({ id: selected.id, action: 'reject', notes })}
+        variant="danger"
+        title="Tolak permintaan penarikan?"
+        description="Saldo dikembalikan ke dompet pengguna dan alasan penolakan dikirim ke mereka."
+        confirmLabel="Tolak penarikan"
+        loading={process.isPending}
+      />
     </div>
   );
 }

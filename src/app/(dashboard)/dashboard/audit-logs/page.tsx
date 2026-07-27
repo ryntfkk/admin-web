@@ -1,8 +1,8 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronRight, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -11,10 +11,11 @@ import { formatDateTime } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
 import { toast } from '@/lib/store/toastStore';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { DataTable, type Column } from '@/components/ui/data-table';
+import { Sheet } from '@/components/ui/sheet';
+import { Field, FieldGrid } from '@/components/ui/field';
+import { useCommandStore } from '@/lib/store/commandStore';
 
 const PER_PAGE = 50;
 
@@ -40,14 +41,17 @@ function auditQuery(f: Filters, page: number, perPage: number) {
   })}`;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function AuditLogsPage() {
+  const openCommandPalette = useCommandStore((s) => s.toggle);
   const [form, setForm] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [selected, setSelected] = useState<AuditLog | null>(null);
   const [exporting, setExporting] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['audit-logs', applied, page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<AuditLog>>(auditQuery(applied, page, PER_PAGE));
@@ -56,8 +60,41 @@ export default function AuditLogsPage() {
     },
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
+  const columns: Column<AuditLog>[] = [
+    {
+      key: 'time',
+      header: 'Waktu',
+      cell: (l) => (
+        <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(l.created_at)}</span>
+      ),
+    },
+    { key: 'admin', header: 'Admin', cell: (l) => <span className="font-medium">{l.admin_username}</span> },
+    { key: 'action', header: 'Aksi', cell: (l) => <Badge variant="neutral">{l.action}</Badge> },
+    {
+      key: 'target',
+      header: 'Target',
+      cell: (l) => (
+        <span className="block max-w-[220px] truncate font-mono text-xs text-muted-foreground">
+          {l.target_id || '-'}
+        </span>
+      ),
+      hideBelow: 'md',
+    },
+    {
+      key: 'ip',
+      header: 'IP',
+      cell: (l) => <span className="font-mono text-xs">{l.ip_address || '-'}</span>,
+      hideBelow: 'lg',
+    },
+    {
+      key: 'payload',
+      header: 'Detail',
+      align: 'right',
+      cell: (l) => (
+        <span className="text-xs text-muted-foreground">{l.payload != null ? 'Lihat' : '-'}</span>
+      ),
+    },
+  ];
 
   function applyFilters() {
     setApplied({
@@ -67,7 +104,7 @@ export default function AuditLogsPage() {
       target_id: form.target_id.trim(),
     });
     setPage(1);
-    setExpanded(null);
+    setSelected(null);
   }
 
   async function exportCSV() {
@@ -112,10 +149,10 @@ export default function AuditLogsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Audit Log</h1>
           <p className="text-sm text-muted-foreground">
-            Riwayat tindakan admin — lengkap dengan IP dan detail perubahan
+            Riwayat tindakan admin — klik baris untuk melihat detail perubahan lengkap.
           </p>
         </div>
-        <Button variant="outline" disabled={exporting || total === 0} onClick={exportCSV}>
+        <Button variant="outline" disabled={exporting || (data?.pagination?.total ?? 0) === 0} onClick={exportCSV}>
           <Download className="size-4" />
           {exporting ? 'Mengekspor…' : 'Export CSV'}
         </Button>
@@ -167,70 +204,72 @@ export default function AuditLogsPage() {
         <Button onClick={applyFilters}>Terapkan</Button>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Tidak ada log" note="Belum ada aktivitas untuk filter ini." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8" />
-                <TableHead>Waktu</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead>Aksi</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>IP</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((log) => {
-                const hasPayload = log.payload != null;
-                const isOpen = expanded === log.id;
-                return (
-                  <Fragment key={log.id}>
-                    <TableRow
-                      className={hasPayload ? 'cursor-pointer' : undefined}
-                      onClick={() => hasPayload && setExpanded(isOpen ? null : log.id)}
-                    >
-                      <TableCell className="text-muted-foreground">
-                        {hasPayload &&
-                          (isOpen ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          ))}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">
-                        {formatDateTime(log.created_at)}
-                      </TableCell>
-                      <TableCell className="font-medium">{log.admin_username}</TableCell>
-                      <TableCell>
-                        <Badge variant="neutral">{log.action}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[220px] truncate font-mono text-xs text-muted-foreground">
-                        {log.target_id || '-'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{log.ip_address || '-'}</TableCell>
-                    </TableRow>
-                    {isOpen && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="bg-muted/40">
-                          <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-all p-1 font-mono text-xs">
-                            {JSON.stringify(log.payload, null, 2)}
-                          </pre>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(l) => l.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Tidak ada log"
+        emptyNote="Belum ada aktivitas untuk filter ini."
+        onRowClick={setSelected}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
+
+      {/* Payload dulu dibuka sebagai baris tambahan di dalam tabel; JSON yang
+          panjang jadi sempit dan mendorong baris lain. Panel samping memberi
+          ruang penuh sekaligus tempat menautkan entitas yang terdampak. */}
+      <Sheet
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title={selected?.action}
+        description={
+          selected ? `${selected.admin_username} · ${formatDateTime(selected.created_at)}` : undefined
+        }
+      >
+        {selected && (
+          <div className="space-y-4">
+            <FieldGrid columns={1}>
+              <Field label="Admin" value={selected.admin_username} />
+              <Field label="Waktu" value={formatDateTime(selected.created_at)} />
+              <Field label="Alamat IP" value={selected.ip_address} mono />
+              <Field
+                label="Target"
+                mono
+                value={
+                  selected.target_id ? (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="break-all">{selected.target_id}</span>
+                      {UUID_RE.test(selected.target_id) && (
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => openCommandPalette()}
+                          title="Cari entitas ini lewat Ctrl+K"
+                        >
+                          Buka entitas
+                        </Button>
+                      )}
+                    </span>
+                  ) : null
+                }
+              />
+            </FieldGrid>
+
+            {selected.payload != null && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-muted-foreground">Payload</p>
+                <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap break-all rounded-lg border border-border bg-muted/40 p-2.5 font-mono text-xs">
+                  {JSON.stringify(selected.payload, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </Sheet>
     </div>
   );
 }

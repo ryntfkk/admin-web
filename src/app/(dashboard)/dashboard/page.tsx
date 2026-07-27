@@ -108,7 +108,7 @@ export default function DashboardPage() {
               icon={Flag}
               label="Laporan Terbuka"
               value={formatNumber(o.open_reports)}
-              accent="bg-rose-500/10 text-rose-600"
+              accent="bg-destructive/10 text-destructive"
             />
           </Link>
           <Link href="/dashboard/disputes" className="block">
@@ -116,7 +116,7 @@ export default function DashboardPage() {
               icon={Scale}
               label="Sengketa Terbuka"
               value={formatNumber(o.open_disputes)}
-              accent="bg-rose-500/10 text-rose-600"
+              accent="bg-destructive/10 text-destructive"
             />
           </Link>
           <Link href="/dashboard/partners" className="block">
@@ -124,7 +124,7 @@ export default function DashboardPage() {
               icon={Clock3}
               label="Mitra Menunggu Verifikasi"
               value={formatNumber(o.pending_partners)}
-              accent="bg-amber-500/10 text-amber-600"
+              accent="bg-warning/10 text-warning"
             />
           </Link>
           <Link href="/dashboard/withdrawals" className="block">
@@ -132,7 +132,7 @@ export default function DashboardPage() {
               icon={Banknote}
               label="Withdrawal Tertunda"
               value={formatNumber(data.financial.pending_withdrawals_count)}
-              accent="bg-emerald-500/10 text-emerald-600"
+              accent="bg-success/10 text-success"
             />
           </Link>
         </div>
@@ -145,19 +145,19 @@ export default function DashboardPage() {
             icon={ShoppingBag}
             label="Pesanan Baru"
             value={formatNumber(t.new_orders)}
-            accent="bg-blue-500/10 text-blue-600"
+            accent="bg-info/10 text-info"
           />
           <StatCard
             icon={CheckCircle2}
             label="Pesanan Selesai"
             value={formatNumber(t.completed_orders)}
-            accent="bg-emerald-500/10 text-emerald-600"
+            accent="bg-success/10 text-success"
           />
           <StatCard
             icon={XCircle}
             label="Pesanan Dibatalkan"
             value={formatNumber(t.cancelled_orders)}
-            accent="bg-rose-500/10 text-rose-600"
+            accent="bg-destructive/10 text-destructive"
           />
         </div>
       </section>

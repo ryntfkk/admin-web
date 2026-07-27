@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -18,9 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Modal } from '@/components/ui/modal';
-import { Pagination } from '@/components/ui/pagination';
-import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { DataTable, type Column } from '@/components/ui/data-table';
 
 const PER_PAGE = 20;
 
@@ -47,7 +45,7 @@ export default function PromosPage() {
     promo: null,
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['promos', page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<Promo>>(
@@ -58,15 +56,55 @@ export default function PromosPage() {
     },
   });
 
-  const rows = data?.data ?? [];
-  const total = data?.pagination?.total ?? 0;
+  const columns: Column<Promo>[] = [
+    { key: 'code', header: 'Kode', cell: (p) => <span className="font-mono font-medium">{p.code}</span> },
+    { key: 'name', header: 'Nama', cell: (p) => p.name },
+    {
+      key: 'discount',
+      header: 'Diskon',
+      align: 'right',
+      cell: (p) => (
+        <span className="tabular-nums text-muted-foreground">
+          {p.discount_type === 'percentage' ? `${p.value}%` : formatIDR(p.value)}
+        </span>
+      ),
+    },
+    {
+      key: 'used',
+      header: 'Terpakai',
+      align: 'right',
+      cell: (p) => (
+        <span className="tabular-nums text-muted-foreground">
+          {p.used_count}
+          {p.usage_limit > 0 ? ` / ${p.usage_limit}` : ''}
+        </span>
+      ),
+      hideBelow: 'sm',
+    },
+    {
+      key: 'valid',
+      header: 'Berlaku s/d',
+      cell: (p) => (
+        <span className="whitespace-nowrap text-muted-foreground">{formatDateTime(p.valid_until)}</span>
+      ),
+      hideBelow: 'md',
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      cell: (p) =>
+        p.is_active ? <Badge variant="success">Aktif</Badge> : <Badge variant="neutral">Nonaktif</Badge>,
+    },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Promo</h1>
-          <p className="text-sm text-muted-foreground">Kelola kode promo &amp; diskon</p>
+          <p className="text-sm text-muted-foreground">
+            Kelola kode promo &amp; diskon — klik baris untuk mengedit.
+          </p>
         </div>
         <Button onClick={() => setEditor({ open: true, promo: null })}>
           <Plus className="size-4" />
@@ -74,65 +112,20 @@ export default function PromosPage() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <CenteredSpinner />
-      ) : rows.length === 0 ? (
-        <EmptyState title="Belum ada promo" note="Buat kode promo pertama Anda." />
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kode</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Diskon</TableHead>
-                <TableHead>Terpakai</TableHead>
-                <TableHead>Berlaku s/d</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-mono font-medium">{p.code}</TableCell>
-                  <TableCell>{p.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.discount_type === 'percentage'
-                      ? `${p.value}%`
-                      : formatIDR(p.value)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.used_count}
-                    {p.usage_limit > 0 ? ` / ${p.usage_limit}` : ''}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDateTime(p.valid_until)}
-                  </TableCell>
-                  <TableCell>
-                    {p.is_active ? (
-                      <Badge variant="success">Aktif</Badge>
-                    ) : (
-                      <Badge variant="neutral">Nonaktif</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditor({ open: true, promo: p })}
-                    >
-                      <Pencil className="size-4" />
-                      Edit
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <Pagination page={page} perPage={PER_PAGE} total={total} onPageChange={setPage} />
-        </>
-      )}
+      <DataTable
+        columns={columns}
+        rows={data?.data}
+        getRowId={(p) => p.id}
+        isLoading={isLoading}
+        error={error}
+        emptyTitle="Belum ada promo"
+        emptyNote="Buat kode promo pertama Anda."
+        onRowClick={(p) => setEditor({ open: true, promo: p })}
+        page={page}
+        perPage={PER_PAGE}
+        total={data?.pagination?.total ?? 0}
+        onPageChange={setPage}
+      />
 
       {editor.open && (
         <PromoEditor

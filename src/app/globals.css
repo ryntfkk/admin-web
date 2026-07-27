@@ -27,6 +27,13 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -64,6 +71,16 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  /* Warna status (sukses/peringatan/info). Sebelumnya kelas palet Tailwind
+     mentah (emerald-50, rose-200, …) dipakai langsung di halaman sehingga
+     hanya benar di tema terang. Token ini punya pasangan gelapnya di .dark. */
+  --success: oklch(0.596 0.145 163.2);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.666 0.179 58.3);
+  --warning-foreground: oklch(0.985 0 0);
+  --info: oklch(0.546 0.245 262.9);
+  --info-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -99,6 +116,15 @@
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.205 0 0);
+  /* Di latar gelap warna status dibuat lebih terang & kurang jenuh agar tetap
+     terbaca — pola yang sama dipakai --destructive. */
+  --success: oklch(0.765 0.155 163.2);
+  --success-foreground: oklch(0.205 0 0);
+  --warning: oklch(0.828 0.169 84.4);
+  --warning-foreground: oklch(0.205 0 0);
+  --info: oklch(0.707 0.165 254.6);
+  --info-foreground: oklch(0.205 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);

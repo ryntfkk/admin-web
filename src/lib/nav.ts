@@ -14,6 +14,8 @@ import {
   Wallet,
   Bell,
   MessageSquare,
+  Settings,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -21,24 +23,76 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  /** true = backend endpoint exists today; false = awaiting backend work. */
-  ready: boolean;
+  /** Kata kunci tambahan agar item ketemu di command palette (Ctrl+K). */
+  keywords?: string[];
 }
 
-export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, ready: true },
-  { label: 'Verifikasi Mitra', href: '/dashboard/partners', icon: BadgeCheck, ready: true },
-  { label: 'Produk Jasa', href: '/dashboard/services', icon: Package, ready: true },
-  { label: 'Sengketa', href: '/dashboard/disputes', icon: Scale, ready: true },
-  { label: 'Withdrawal', href: '/dashboard/withdrawals', icon: Banknote, ready: true },
-  { label: 'Pengguna', href: '/dashboard/users', icon: Users, ready: true },
-  { label: 'Promo', href: '/dashboard/promos', icon: Ticket, ready: true },
-  { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, ready: true },
-  { label: 'Transaksi', href: '/dashboard/transactions', icon: Receipt, ready: true },
-  { label: 'Kategori', href: '/dashboard/categories', icon: LayoutGrid, ready: true },
-  { label: 'Laporan', href: '/dashboard/reports', icon: Flag, ready: true },
-  { label: 'Review', href: '/dashboard/reviews', icon: Star, ready: true },
-  { label: 'Keuangan', href: '/dashboard/financial', icon: Wallet, ready: true },
-  { label: 'Notifikasi', href: '/dashboard/notifications', icon: Bell, ready: true },
-  { label: 'Chat', href: '/dashboard/chat', icon: MessageSquare, ready: true },
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+/**
+ * Menu dikelompokkan menurut cara kerja admin, bukan menurut nama tabel:
+ * antrean harian dulu (Operasional), baru penelusuran data, uang, lalu sistem.
+ *
+ * Catatan: verifikasi mitra memakai satu entri "Mitra" yang sama dengan
+ * penelusuran data — badge merahnya sudah menandai antrean yang perlu ditinjau,
+ * jadi tak perlu dua entri ke rute yang sama (ambigu untuk penanda menu aktif).
+ */
+export const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Operasional',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, keywords: ['beranda', 'ringkasan', 'statistik'] },
+      { label: 'Sengketa', href: '/dashboard/disputes', icon: Scale, keywords: ['dispute', 'mediasi'] },
+      { label: 'Laporan', href: '/dashboard/reports', icon: Flag, keywords: ['report', 'cs', 'bantuan', 'tiket'] },
+      { label: 'Withdrawal', href: '/dashboard/withdrawals', icon: Banknote, keywords: ['tarik', 'payout', 'pencairan'] },
+      { label: 'Chat', href: '/dashboard/chat', icon: MessageSquare, keywords: ['pesan', 'percakapan'] },
+    ],
+  },
+  {
+    label: 'Data',
+    items: [
+      { label: 'Pengguna', href: '/dashboard/users', icon: Users, keywords: ['user', 'customer', 'pelanggan', 'akun'] },
+      { label: 'Mitra', href: '/dashboard/partners', icon: BadgeCheck, keywords: ['partner', 'verifikasi', 'kyc'] },
+      { label: 'Produk Jasa', href: '/dashboard/services', icon: Package, keywords: ['layanan', 'service', 'produk'] },
+      { label: 'Kategori', href: '/dashboard/categories', icon: LayoutGrid, keywords: ['category', 'subkategori'] },
+      { label: 'Promo', href: '/dashboard/promos', icon: Ticket, keywords: ['voucher', 'kupon', 'diskon'] },
+      { label: 'Review', href: '/dashboard/reviews', icon: Star, keywords: ['ulasan', 'rating', 'bintang'] },
+    ],
+  },
+  {
+    label: 'Keuangan',
+    items: [
+      { label: 'Transaksi', href: '/dashboard/transactions', icon: Receipt, keywords: ['order', 'pesanan', 'booking'] },
+      { label: 'Keuangan', href: '/dashboard/financial', icon: Wallet, keywords: ['dompet', 'saldo', 'ledger', 'finansial'] },
+    ],
+  },
+  {
+    label: 'Sistem',
+    items: [
+      { label: 'Notifikasi', href: '/dashboard/notifications', icon: Bell, keywords: ['notification', 'pemberitahuan', 'broadcast', 'pengumuman'] },
+      { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, keywords: ['jejak', 'riwayat admin', 'log'] },
+      { label: 'Setelan', href: '/dashboard/settings', icon: Settings, keywords: ['komisi', 'tarif', 'biaya', 'platform', 'konfigurasi'] },
+      { label: 'Admin', href: '/dashboard/admins', icon: ShieldCheck, keywords: ['pengelola', 'akun admin', 'akses'] },
+    ],
+  },
 ];
+
+/** Semua item, diratakan — untuk command palette & breadcrumb. */
+export const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
+
+/**
+ * Item menu yang cocok dengan sebuah pathname. `/dashboard` dicocokkan persis
+ * agar tidak ikut aktif di setiap sub-halaman.
+ */
+export function findNavItem(pathname: string): NavItem | undefined {
+  return NAV_ITEMS.find((item) =>
+    item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href),
+  );
+}
+
+export function isNavItemActive(item: NavItem, pathname: string): boolean {
+  return item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href);
+}
