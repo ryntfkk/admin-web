@@ -218,6 +218,14 @@ export function DocumentsTab({ partnerId }: { partnerId: string }) {
                   Buka berkas
                   <ExternalLink className="size-3" />
                 </a>
+                {doc.document_number && (
+                  <p className="text-xs text-muted-foreground">Nomor: {doc.document_number}</p>
+                )}
+                {doc.expires_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Berlaku sampai: {formatDateTime(doc.expires_at)}
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Diunggah {formatDateTime(doc.created_at)}
                   {doc.verified_by && ` · ditinjau ${doc.verified_by}`}

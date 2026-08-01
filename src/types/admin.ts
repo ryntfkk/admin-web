@@ -257,6 +257,17 @@ export interface UserDetailRow {
   bank_account_name: NullString;
   created_at: string;
   deleted_at: NullTime;
+  /**
+   * Sinyal auth. Tanpa ini panel tidak punya cara membedakan akun Google tanpa
+   * password dari akun biasa — admin yang menyelidiki "user tidak bisa login"
+   * hanya melihat baris yang tampak normal.
+   */
+  phone_verified: boolean;
+  email_verified: boolean;
+  /** Asal pendaftaran ('local' | 'google'), BUKAN kapabilitas login. */
+  auth_provider: string;
+  has_google: boolean;
+  has_password: boolean;
 }
 
 // ── Login history (admin.LoginHistoryResponse) ──────────────────────
@@ -502,6 +513,7 @@ export interface PartnerDocument {
   partner_id: string;
   doc_type: string;
   file_url: string;
+  document_number: string | null;
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
   verified_by: string | null;
   verified_at: string | null;

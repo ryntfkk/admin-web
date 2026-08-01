@@ -236,6 +236,11 @@ function EditProfileDialog({
     phone: nstr(user.phone) || '',
   });
 
+  // Backend menolak format yang salah; validasi di sini hanya agar admin tahu
+  // sebelum menekan Simpan. 08xx / 62xx / +62xx sama-sama diterima dan
+  // dikanonikkan ke 62xxx oleh backend.
+  const phoneValid = !form.phone.trim() || /^(\+?62|0)8\d{7,12}$/.test(form.phone.replace(/[\s-]/g, ''));
+
   const save = useAdminMutation(
     async () => {
       const res = await fetchAPI(`/admin/users/${userId}`, {
@@ -266,15 +271,17 @@ function EditProfileDialog({
         <div className="flex flex-col gap-1.5">
           <Label>Telepon</Label>
           <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
-          <p className="text-xs text-muted-foreground">
-            Disimpan dalam format kanonik 62xxx oleh backend.
+          <p className={`text-xs ${phoneValid ? 'text-muted-foreground' : 'text-destructive'}`}>
+            {phoneValid
+              ? 'Disimpan dalam format kanonik 62xxx oleh backend. Mengubah nomor akan mencabut status terverifikasi — admin tidak bisa membuktikan OTP.'
+              : 'Format nomor tidak valid (contoh: 08123456789 atau 628123456789).'}
           </p>
         </div>
         <div className="flex justify-end gap-2 border-t border-border pt-4">
           <Button variant="ghost" onClick={onClose}>
             Batal
           </Button>
-          <Button disabled={!form.name.trim() || save.isPending} onClick={() => save.mutate()}>
+          <Button disabled={!form.name.trim() || !phoneValid || save.isPending} onClick={() => save.mutate()}>
             {save.isPending ? 'Menyimpan…' : 'Simpan'}
           </Button>
         </div>

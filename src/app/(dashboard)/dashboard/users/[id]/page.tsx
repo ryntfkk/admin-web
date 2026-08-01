@@ -217,7 +217,7 @@ export default function UserDetailPage() {
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setAction('resetPassword')}>
                   <KeyRound className="size-4" />
-                  Password
+                  {data.has_password ? 'Reset password' : 'Set password'}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => setAction('adjustWallet')}>
                   <Wallet className="size-4" />
@@ -307,8 +307,35 @@ function ProfileTab({ user, isDeleted }: { user: UserDetailRow; isDeleted: boole
           value={(user.roles ?? [user.active_role]).map((r) => roleLabel[r] || r).join(', ')}
         />
         <Field label="Peran aktif" value={roleLabel[user.active_role] || user.active_role} />
-        <Field label="Email" value={nstr(user.email)} />
-        <Field label="Telepon" value={nstr(user.phone)} />
+        <Field
+          label="Email"
+          value={
+            nstr(user.email)
+              ? `${nstr(user.email)}${user.email_verified ? '' : ' (belum terverifikasi)'}`
+              : null
+          }
+        />
+        <Field
+          label="Telepon"
+          value={
+            nstr(user.phone)
+              ? `${nstr(user.phone)}${user.phone_verified ? '' : ' (belum terverifikasi)'}`
+              : null
+          }
+        />
+        {/* Tiga field di bawah menjawab "kenapa user ini tidak bisa login". */}
+        <Field
+          label="Metode masuk"
+          value={
+            [
+              user.has_password ? 'Password' : null,
+              user.has_google ? 'Google' : null,
+            ]
+              .filter(Boolean)
+              .join(' + ') || 'Tidak ada (akun terkunci)'
+          }
+        />
+        <Field label="Terdaftar via" value={user.auth_provider === 'google' ? 'Google' : 'Lokal'} />
         <Field label="Saldo" value={formatIDR(user.balance)} />
         <Field label="Bank" value={nstr(user.bank_code)} />
         <Field label="No. rekening" value={nstr(user.bank_account_number)} mono />
