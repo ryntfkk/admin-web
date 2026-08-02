@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
-import type { PartnerDocument, PartnerStrike, WorkingHour } from '@/types/admin';
+import type { PartnerDocument, PartnerStrike, PartnerPortfolioPhoto, PartnerServiceRow, WorkingHour } from '@/types/admin';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
 import { Badge } from '@/components/ui/badge';
@@ -447,5 +447,112 @@ function AddStrikeDialog({
         </div>
       </div>
     </Modal>
+  );
+}
+
+// ── F4: Portfolio (admin lihat semua, hapus permanen) ───────────────
+
+export function PortfolioTab({ partnerId }: { partnerId: string }) {
+  const qc = useQueryClient();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['partner-portfolio', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<PartnerPortfolioPhoto[]>(`/admin/partners/${partnerId}/portfolio`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data ?? [];
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: async (photoId: string) => {
+      const res = await fetchAPI(`/admin/partners/${partnerId}/portfolio/${photoId}`, { method: 'DELETE' });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Foto portfolio dihapus permanen');
+      setDeleteId(null);
+      qc.invalidateQueries({ queryKey: ['partner-portfolio', partnerId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) return <CenteredSpinner />;
+  if (!data || data.length === 0) return <EmptyState title="Belum ada foto portfolio" />;
+
+  return (
+    <EntitySection title="Portfolio Mitra" description="Admin dapat melihat semua foto (termasuk yang di-soft-delete mitra) dan menghapus permanen konten yang melanggar.">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        {data.map((photo) => (
+          <div key={photo.id} className="relative overflow-hidden rounded-lg border">
+            <img src={photo.photo_url} alt={photo.caption?.String || ''} className="aspect-square w-full object-cover" />
+            {photo.deleted_at?.Valid && (
+              <span className="absolute left-1 top-1 rounded bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                Dihapus mitra
+              </span>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between bg-black/60 px-2 py-1">
+              <span className="text-[10px] text-white">{formatDateTime(photo.created_at)}</span>
+              <button
+                onClick={() => setDeleteId(photo.id)}
+                className="text-white hover:text-destructive"
+                aria-label="Hapus permanen"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteId && remove.mutate(deleteId)}
+        variant="danger"
+        title="Hapus foto portfolio permanen?"
+        description="Foto dihapus dari database (hard delete). Tidak bisa dikembalikan. Dipakai untuk konten yang melanggar (SARA, pornografi, dll)."
+        confirmLabel="Hapus permanen"
+        loading={remove.isPending}
+      />
+    </EntitySection>
+  );
+}
+
+// ── F4: Layanan mitra (admin review) ────────────────────────────────
+
+export function ServicesTab({ partnerId }: { partnerId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['partner-services', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<PartnerServiceRow[]>(`/admin/partners/${partnerId}/services`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data ?? [];
+    },
+  });
+
+  if (isLoading) return <CenteredSpinner />;
+  if (!data || data.length === 0) return <EmptyState title="Belum ada layanan" />;
+
+  return (
+    <EntitySection title="Layanan Mitra" description="Daftar layanan aktif & non-aktif. Admin dapat review konten sebelum/sesudah verifikasi.">
+      <div className="space-y-2">
+        {data.map((svc) => (
+          <div key={svc.id} className="flex items-center justify-between rounded-lg border p-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-sm">{svc.name}</p>
+              <p className="text-xs text-muted-foreground line-clamp-1">{svc.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Rp {svc.price.toLocaleString('id-ID')} • Dibuat {formatDateTime(svc.created_at)}
+              </p>
+            </div>
+            <Badge variant={svc.is_active ? 'success' : 'neutral'}>
+              {svc.is_active ? 'Aktif' : 'Nonaktif'}
+            </Badge>
+          </div>
+        ))}
+      </div>
+    </EntitySection>
   );
 }

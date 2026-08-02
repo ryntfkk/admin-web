@@ -29,6 +29,43 @@ export interface PartnerDetailRow extends PendingPartnerRow {
   bank_code: NullString;
   bank_account_number: NullString;
   bank_account_name: NullString;
+  // F4: field lengkap untuk admin review (basecamp, service_area, statistik)
+  service_area: string[] | null;
+  is_online: boolean;
+  strike_count: number;
+  avg_rating: string;
+  total_reviews: number;
+  total_orders: number;
+  basecamp_lat: number;
+  basecamp_lon: number;
+  city: NullString;
+  district: NullString;
+  province: NullString;
+  address_detail: NullString;
+  avatar_url: NullString;
+}
+
+// F4: portfolio photo (admin lihat semua termasuk soft-deleted)
+export interface PartnerPortfolioPhoto {
+  id: string;
+  partner_id: string;
+  photo_url: string;
+  caption: NullString;
+  created_at: string;
+  deleted_at: NullTime;
+  deleted_by_partner: boolean;
+}
+
+// F4: service singkat untuk admin review
+export interface PartnerServiceRow {
+  id: string;
+  partner_id: string;
+  category_id: string;
+  name: string;
+  description: string;
+  price: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 // ── Disputes ────────────────────────────────────────────────────────

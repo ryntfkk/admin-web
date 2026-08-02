@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
-import { DocumentsTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
+import { DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 
 type VerifyAction = 'approve' | 'reject' | 'revoke' | 'delete' | 'editProfile' | 'editBank' | null;
 
@@ -102,6 +102,8 @@ export default function PartnerDetailPage() {
         { id: 'profil', label: 'Profil', content: <ProfileTab partner={data} /> },
         { id: 'identitas', label: 'KTP & Selfie', content: <IdentityTab partner={data} /> },
         { id: 'dokumen', label: 'Dokumen', content: <DocumentsTab partnerId={partnerId} /> },
+        { id: 'layanan', label: 'Layanan', content: <ServicesTab partnerId={partnerId} /> },
+        { id: 'portfolio', label: 'Portfolio', content: <PortfolioTab partnerId={partnerId} /> },
         { id: 'jadwal', label: 'Jam Operasional', content: <WorkingHoursTab partnerId={partnerId} /> },
         { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
       ]
@@ -317,6 +319,43 @@ function ProfileTab({ partner }: { partner: PartnerDetailRow }) {
           <Field label="Bank" value={nstr(partner.bank_code)} />
           <Field label="No. rekening" value={nstr(partner.bank_account_number)} mono />
           <Field label="Atas nama" value={nstr(partner.bank_account_name)} />
+        </FieldGrid>
+      </EntitySection>
+
+      {/* F4: Basecamp & area layanan — data verifikasi yang terkunci guard F1.
+          Admin butuh lihat ini sebelum approve/revoke. */}
+      <EntitySection
+        title="Basecamp & Area Layanan"
+        description="Data verifikasi. Mitra approved tidak bisa mengubah tanpa admin revoke (F1/F3)."
+      >
+        <FieldGrid columns={3}>
+          <Field label="Provinsi" value={nstr(partner.province)} />
+          <Field label="Kota/Kabupaten" value={nstr(partner.city)} />
+          <Field label="Kecamatan" value={nstr(partner.district)} />
+          <Field label="Detail alamat" value={nstr(partner.address_detail)} />
+          <Field
+            label="Koordinat basecamp"
+            value={
+              partner.basecamp_lat || partner.basecamp_lon
+                ? `${partner.basecamp_lat.toFixed(6)}, ${partner.basecamp_lon.toFixed(6)}`
+                : 'Belum diatur'
+            }
+            mono
+          />
+          <Field
+            label="Area layanan"
+            value={partner.service_area?.length ? partner.service_area.join(', ') : 'Belum diatur'}
+          />
+        </FieldGrid>
+      </EntitySection>
+
+      {/* F4: Statistik performa mitra */}
+      <EntitySection title="Statistik Performa">
+        <FieldGrid columns={3}>
+          <Field label="Rating rata-rata" value={partner.avg_rating || '0.00'} />
+          <Field label="Total ulasan" value={String(partner.total_reviews)} />
+          <Field label="Total pesanan" value={String(partner.total_orders)} />
+          <Field label="Strike" value={String(partner.strike_count)} />
         </FieldGrid>
       </EntitySection>
 
