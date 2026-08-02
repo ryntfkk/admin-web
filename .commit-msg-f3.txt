@@ -1,0 +1,16 @@
+feat(partners): tombol Cabut Verifikasi pakai endpoint revoke (F3)
+
+Sebelumnya tombol "Cabut verifikasi" di detail mitra approved memakai endpoint
+verify{action:'reject'} yang set status ke 'rejected' — mitra blocked, tidak
+bisa re-submit langsung. F3 memperbaiki ini:
+
+- Tombol "Cabut verifikasi" (hanya mitra approved) sekarang pakai endpoint
+  PUT /admin/partners/:id/revoke-verification → set status ke 'pending'.
+  Mitra dapat edit data verifikasi yang terkunci guard F1 lalu re-submit.
+- Tombol "Tolak" (hanya mitra pending) tetap pakai verify{reject} → 'rejected'.
+- ConfirmDialog revoke: alasan wajib + confirmPhrase (ketik ulang nama mitra)
+  supaya tidak salah klik.
+
+Generated with [Devin](https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>

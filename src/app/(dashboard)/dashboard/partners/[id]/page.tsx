@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldX, Trash2 } from 'lucide-react';
+import { Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldOff, ShieldX, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
 import type { PartnerDetailRow } from '@/types/admin';
@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
 import { DocumentsTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 
-type VerifyAction = 'approve' | 'reject' | 'delete' | 'editProfile' | 'editBank' | null;
+type VerifyAction = 'approve' | 'reject' | 'revoke' | 'delete' | 'editProfile' | 'editBank' | null;
 
 export default function PartnerDetailPage() {
   const { id: partnerId } = useParams<{ id: string }>();
@@ -49,6 +49,27 @@ export default function PartnerDetailPage() {
     },
     onSuccess: (_r, vars) => {
       toast.success(vars.action === 'approve' ? 'Mitra disetujui' : 'Verifikasi mitra dicabut');
+      setAction(null);
+      qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
+      qc.invalidateQueries({ queryKey: ['partners'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // F3: revoke-verification endpoint — set status ke 'pending' (bukan 'rejected')
+  // supaya mitra bisa edit data verifikasi yang terkunci guard F1 lalu re-submit.
+  // Berbeda dari verify{action:'reject'} yang set ke 'rejected' (mitra blocked).
+  const revoke = useMutation({
+    mutationFn: async (reason: string) => {
+      const res = await fetchAPI(`/admin/partners/${partnerId}/revoke-verification`, {
+        method: 'PUT',
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Verifikasi dicabut — mitra dapat mengedit data lalu mengajukan ulang');
       setAction(null);
       qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
       qc.invalidateQueries({ queryKey: ['partners'] });
@@ -136,7 +157,20 @@ export default function PartnerDetailPage() {
                   {status === 'rejected' ? 'Tinjau ulang & setujui' : 'Setujui'}
                 </Button>
               )}
-              {status !== 'rejected' && (
+              {/* F3: "Cabut verifikasi" (revoke → pending) hanya untuk mitra approved.
+                  Berbeda dari "Tolak" (reject → rejected) untuk mitra pending. */}
+              {isApproved && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setAction('revoke')}
+                  disabled={revoke.isPending}
+                >
+                  <ShieldOff className="size-4" />
+                  Cabut verifikasi
+                </Button>
+              )}
+              {!isApproved && (
                 <Button
                   variant="destructive"
                   size="sm"
@@ -144,7 +178,7 @@ export default function PartnerDetailPage() {
                   disabled={verify.isPending}
                 >
                   <ShieldX className="size-4" />
-                  {isApproved ? 'Cabut verifikasi' : 'Tolak'}
+                  Tolak
                 </Button>
               )}
               <Button variant="destructive" size="sm" onClick={() => setAction('delete')}>
@@ -207,20 +241,33 @@ export default function PartnerDetailPage() {
         onClose={() => setAction(null)}
         onConfirm={(reason) => verify.mutate({ action: 'reject', reason })}
         variant="danger"
-        title={isApproved ? 'Cabut verifikasi mitra?' : 'Tolak pendaftaran mitra?'}
-        description={
-          isApproved
-            ? 'Mitra tidak akan bisa menerima pesanan baru. Alasan dikirim ke mitra dan tercatat di audit log.'
-            : 'Alasan dikirim ke mitra dan tercatat di audit log.'
-        }
-        confirmLabel={isApproved ? 'Cabut verifikasi' : 'Tolak'}
+        title="Tolak pendaftaran mitra?"
+        description="Alasan dikirim ke mitra dan tercatat di audit log. Mitra berstatus 'rejected' tidak bisa re-submit langsung — perlu admin tinjau ulang."
+        confirmLabel="Tolak"
+        requireReason
+        reasonLabel="Alasan"
+        reasonPlaceholder="Jelaskan alasan yang akan dikirim ke mitra…"
+        loading={verify.isPending}
+      />
+
+      {/* F3: revoke-verification — set status ke 'pending' (bukan 'rejected').
+          Mitra lalu bisa edit data verifikasi yang terkunci guard F1
+          (basecamp, rekening, dokumen APPROVED) lalu ajukan verifikasi ulang. */}
+      <ConfirmDialog
+        open={action === 'revoke'}
+        onClose={() => setAction(null)}
+        onConfirm={(reason) => revoke.mutate(reason)}
+        variant="danger"
+        title="Cabut verifikasi mitra?"
+        description="Status mitra kembali ke 'pending'. Mitra dapat mengedit data verifikasi yang terkunci (basecamp, rekening, dokumen) lalu mengajukan verifikasi ulang. Alasan dikirim ke mitra dan tercatat di audit log."
+        confirmLabel="Cabut verifikasi"
         requireReason
         reasonLabel="Alasan"
         reasonPlaceholder="Jelaskan alasan yang akan dikirim ke mitra…"
         // Mencabut mitra yang sudah aktif memutus pendapatannya — minta admin
         // mengetik ulang namanya supaya tidak terjadi karena salah klik.
-        confirmPhrase={isApproved ? data?.name : undefined}
-        loading={verify.isPending}
+        confirmPhrase={data?.name}
+        loading={revoke.isPending}
       />
     </>
   );
