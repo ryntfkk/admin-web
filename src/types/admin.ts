@@ -94,7 +94,9 @@ export interface PartnerDetailRow extends PendingPartnerRow {
   address_detail: NullString;
   avatar_url: NullString;
   // V4: identitas badan usaha. Selalu null untuk perorangan.
-  // npwp sengaja TIDAK dikirim backend — PII pajak, tersimpan terenkripsi.
+  // NPWP dikirim sudah terdekripsi ('' bila tidak ada) — PII pajak, jadi UI
+  // menyembunyikannya di balik tombol "tampilkan" seperti decrypted_ktp.
+  decrypted_npwp: string;
   entity_form: NullString;
   nib: NullString;
   pic_name: NullString;

@@ -424,6 +424,7 @@ function ProfileTab({
   checklist?: VerificationChecklist;
 }) {
   const [showKtp, setShowKtp] = useState(false);
+  const [showNpwp, setShowNpwp] = useState(false);
   const ktp = nstr(partner.decrypted_ktp);
   const isVendor = partner.partner_type === 'vendor';
 
@@ -467,6 +468,25 @@ function ProfileTab({
             <Field label="Nama badan hukum" value={nstr(partner.legal_entity_name)} />
             <Field label="Bentuk badan usaha" value={nstr(partner.entity_form)} />
             <Field label="NIB" value={nstr(partner.nib)} mono />
+            <Field
+              label="NPWP"
+              mono
+              value={
+                partner.decrypted_npwp ? (
+                  <span className="flex items-center gap-2">
+                    {showNpwp ? partner.decrypted_npwp : '•'.repeat(partner.decrypted_npwp.length)}
+                    <button
+                      type="button"
+                      onClick={() => setShowNpwp((v) => !v)}
+                      aria-label={showNpwp ? 'Sembunyikan NPWP' : 'Tampilkan NPWP'}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {showNpwp ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                    </button>
+                  </span>
+                ) : null
+              }
+            />
             <Field label="PIC" value={nstr(partner.pic_name)} />
             <Field label="Jabatan PIC" value={nstr(partner.pic_position)} />
             <Field label="Telepon usaha" value={nstr(partner.business_phone)} />
