@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Plus, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
-import type { PartnerDocument, PartnerStrike, PartnerPortfolioPhoto, PartnerServiceRow, WorkingHour } from '@/types/admin';
+import type { PartnerDocument, PartnerStrike, PartnerPortfolioPhoto, PartnerServiceRow, PartnerActionLog, WorkingHour } from '@/types/admin';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
 import { Badge } from '@/components/ui/badge';
@@ -550,6 +550,67 @@ export function ServicesTab({ partnerId }: { partnerId: string }) {
             <Badge variant={svc.is_active ? 'success' : 'neutral'}>
               {svc.is_active ? 'Aktif' : 'Nonaktif'}
             </Badge>
+          </div>
+        ))}
+      </div>
+    </EntitySection>
+  );
+}
+
+// ── F5: Riwayat Aksi mitra (audit log) ──────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  ONBOARD_SUBMIT: 'Submit onboarding',
+  UPDATE_PROFILE: 'Update profil',
+  UPDATE_BANK_ACCOUNT: 'Update rekening bank',
+  DELETE_DOCUMENT: 'Hapus dokumen',
+  DELETE_PORTFOLIO: 'Hapus portfolio',
+  ADD_DOCUMENT: 'Tambah dokumen',
+  ADD_PORTFOLIO: 'Tambah portfolio',
+};
+
+export function ActionLogsTab({ partnerId }: { partnerId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['partner-action-logs', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<PartnerActionLog[]>(`/admin/partners/${partnerId}/action-logs?limit=100`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data ?? [];
+    },
+  });
+
+  if (isLoading) return <CenteredSpinner />;
+  if (!data || data.length === 0) return <EmptyState title="Belum ada riwayat aksi" />;
+
+  return (
+    <EntitySection
+      title="Riwayat Aksi Mitra"
+      description="Audit trail semua aksi mitra (delete dokumen, update profil/rekening, submit onboarding). Dipakai untuk investigasi saat ada sengketa."
+    >
+      <div className="space-y-2">
+        {data.map((log) => (
+          <div key={log.id} className="flex items-start gap-3 rounded-lg border p-3">
+            <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+              {log.action.charAt(0)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">
+                  {ACTION_LABELS[log.action] || log.action}
+                </p>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatDateTime(log.created_at)}
+                </span>
+              </div>
+              {log.payload && Object.keys(log.payload).length > 0 && (
+                <pre className="mt-1 overflow-x-auto rounded bg-muted/50 p-2 text-[11px] text-muted-foreground">
+                  {JSON.stringify(log.payload, null, 0)}
+                </pre>
+              )}
+              {log.ip_address?.Valid && (
+                <p className="mt-1 text-[11px] text-muted-foreground">IP: {log.ip_address.String}</p>
+              )}
+            </div>
           </div>
         ))}
       </div>

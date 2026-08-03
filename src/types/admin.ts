@@ -68,6 +68,18 @@ export interface PartnerServiceRow {
   created_at: string;
 }
 
+// F5: audit log mitra — timeline aksi (delete dokumen, update profile, dll).
+export interface PartnerActionLog {
+  id: string;
+  partner_id: string;
+  user_id: NullUUID;
+  action: string;
+  payload: Record<string, unknown> | null;
+  ip_address: NullString;
+  user_agent: NullString;
+  created_at: string;
+}
+
 // ── Disputes ────────────────────────────────────────────────────────
 export interface DisputeRow {
   id: string;

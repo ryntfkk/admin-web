@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
-import { DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
+import { ActionLogsTab, DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 
 type VerifyAction = 'approve' | 'reject' | 'revoke' | 'suspend' | 'unsuspend' | 'delete' | 'editProfile' | 'editBank' | null;
 
@@ -140,6 +140,7 @@ export default function PartnerDetailPage() {
         { id: 'portfolio', label: 'Portfolio', content: <PortfolioTab partnerId={partnerId} /> },
         { id: 'jadwal', label: 'Jam Operasional', content: <WorkingHoursTab partnerId={partnerId} /> },
         { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
+        { id: 'aksi', label: 'Riwayat Aksi', content: <ActionLogsTab partnerId={partnerId} /> },
       ]
     : [];
 
