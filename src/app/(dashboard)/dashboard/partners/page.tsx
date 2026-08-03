@@ -25,16 +25,17 @@ const PER_PAGE = 20;
 export default function PartnersPage() {
   const router = useRouter();
   const [status, setStatus] = useState('pending');
+  const [partnerType, setPartnerType] = useState('');
   const [searchInput, setSearchInput] = useState('');
   // Pencarian langsung: hasil menyusul 300ms setelah admin berhenti mengetik.
   const search = useDebouncedValue(searchInput.trim(), 300);
   const [page, setPage] = useState(1);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['partners', status, search, page],
+    queryKey: ['partners', status, partnerType, search, page],
     queryFn: async () => {
       const res = await fetchAPI<PaginatedData<PendingPartnerRow>>(
-        `/admin/partners${qs({ status, q: search, page, per_page: PER_PAGE })}`,
+        `/admin/partners${qs({ status, partner_type: partnerType, q: search, page, per_page: PER_PAGE })}`,
       );
       if (!res.success || !res.data) throw new Error(getErrorMessage(res));
       return res.data;
@@ -42,7 +43,32 @@ export default function PartnersPage() {
   });
 
   const columns: Column<PendingPartnerRow>[] = [
-    { key: 'name', header: 'Nama', cell: (p) => <span className="font-medium">{p.name}</span> },
+    {
+      key: 'name',
+      header: 'Nama',
+      // Nama tampil (yang dilihat pelanggan) di depan; nama orang/PIC di
+      // bawahnya. Untuk perorangan display_name NULL sehingga keduanya sama dan
+      // baris kedua tidak dirender.
+      cell: (p) => {
+        const display = nstr(p.display_name);
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{display || p.name}</span>
+            {display && <span className="text-xs text-muted-foreground">PIC: {p.name}</span>}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'type',
+      header: 'Tipe',
+      cell: (p) => (
+        <Badge variant={p.partner_type === 'vendor' ? 'info' : 'neutral'}>
+          {p.partner_type === 'vendor' ? 'Badan Usaha' : 'Perorangan'}
+        </Badge>
+      ),
+      hideBelow: 'sm',
+    },
     {
       key: 'contact',
       header: 'Kontak',
@@ -112,10 +138,24 @@ export default function PartnersPage() {
                 ))}
               </Select>
             </div>
+            <div className="w-44">
+              <Select
+                value={partnerType}
+                aria-label="Filter tipe mitra"
+                onChange={(e) => {
+                  setPartnerType(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua tipe</option>
+                <option value="individual">Perorangan</option>
+                <option value="vendor">Badan Usaha</option>
+              </Select>
+            </div>
             <div className="min-w-52 flex-1">
               <Input
                 value={searchInput}
-                placeholder="Cari nama, telepon, email…"
+                placeholder="Cari nama, nama usaha, telepon, email…"
                 aria-label="Cari mitra"
                 onChange={(e) => {
                   setSearchInput(e.target.value);

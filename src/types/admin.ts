@@ -13,10 +13,60 @@ export interface PendingPartnerRow {
   bio: NullString;
   verification_status: string;
   submitted_at: string;
+  // V1/V4: partner_type membedakan perorangan vs badan usaha.
+  // `name` TETAP nama ORANG (untuk vendor: PIC) — admin membutuhkannya untuk
+  // mencocokkan KTP. display_name adalah nama yang dilihat PELANGGAN.
+  partner_type: PartnerType;
+  display_name: NullString;
+  legal_entity_name: NullString;
   user_id: string;
   name: string;
   phone: NullString;
   email: NullString;
+}
+
+export type PartnerType = 'individual' | 'vendor';
+
+export const ENTITY_FORMS = [
+  'PT',
+  'CV',
+  'UD',
+  'FIRMA',
+  'KOPERASI',
+  'YAYASAN',
+  'PERKUMPULAN',
+] as const;
+export type EntityForm = (typeof ENTITY_FORMS)[number];
+
+// V4 §7.2.4: checklist dokumen wajib. Aturannya datang dari backend
+// (requiredDocsFor) — JANGAN disalin ke sini, karena gate approve memakai
+// aturan backend dan salinan di frontend akan melenceng diam-diam.
+export interface VerificationChecklistItem {
+  doc_type: string;
+  label: string;
+  satisfied: boolean;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED' | 'EXPIRED' | 'MISSING';
+}
+
+export interface VerificationChecklist {
+  partner_type: PartnerType;
+  can_approve: boolean;
+  missing: string[] | null;
+  items: VerificationChecklistItem[];
+}
+
+export interface UpdatePartnerIdentityPayload {
+  partner_type: PartnerType;
+  reason: string;
+  display_name?: string;
+  legal_entity_name?: string;
+  entity_form?: string;
+  npwp?: string;
+  nib?: string;
+  pic_name?: string;
+  pic_position?: string;
+  business_phone?: string;
+  business_email?: string;
 }
 
 export interface PartnerDetailRow extends PendingPartnerRow {
@@ -43,6 +93,14 @@ export interface PartnerDetailRow extends PendingPartnerRow {
   province: NullString;
   address_detail: NullString;
   avatar_url: NullString;
+  // V4: identitas badan usaha. Selalu null untuk perorangan.
+  // npwp sengaja TIDAK dikirim backend — PII pajak, tersimpan terenkripsi.
+  entity_form: NullString;
+  nib: NullString;
+  pic_name: NullString;
+  pic_position: NullString;
+  business_phone: NullString;
+  business_email: NullString;
 }
 
 // F4: portfolio photo (admin lihat semua termasuk soft-deleted)

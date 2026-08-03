@@ -3,10 +3,16 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldCheck, ShieldOff, ShieldX, Trash2 } from 'lucide-react';
+import { BadgeCheck, Ban, Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldCheck, ShieldOff, ShieldX, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
-import type { PartnerDetailRow } from '@/types/admin';
+import type {
+  PartnerDetailRow,
+  PartnerType,
+  UpdatePartnerIdentityPayload,
+  VerificationChecklist,
+} from '@/types/admin';
+import { ENTITY_FORMS } from '@/types/admin';
 import { nstr } from '@/lib/sql';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
@@ -22,7 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
 import { ActionLogsTab, DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 
-type VerifyAction = 'approve' | 'reject' | 'revoke' | 'suspend' | 'unsuspend' | 'delete' | 'editProfile' | 'editBank' | null;
+type VerifyAction = 'approve' | 'reject' | 'revoke' | 'suspend' | 'unsuspend' | 'delete' | 'editProfile' | 'editBank' | 'editIdentity' | null;
 
 export default function PartnerDetailPage() {
   const { id: partnerId } = useParams<{ id: string }>();
@@ -34,6 +40,19 @@ export default function PartnerDetailPage() {
     queryKey: ['partner-detail', partnerId],
     queryFn: async () => {
       const res = await fetchAPI<PartnerDetailRow>(`/admin/partners/${partnerId}`);
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
+  // V4 §7.2.4: checklist dokumen wajib. Aturannya milik backend — halaman ini
+  // hanya merendernya, supaya tidak melenceng dari gate approve yang sebenarnya.
+  const { data: checklist } = useQuery({
+    queryKey: ['partner-checklist', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<VerificationChecklist>(
+        `/admin/partners/${partnerId}/verification-checklist`,
+      );
       if (!res.success || !res.data) throw new Error(getErrorMessage(res));
       return res.data;
     },
@@ -114,6 +133,13 @@ export default function PartnerDetailPage() {
 
   const status = data?.verification_status;
   const isApproved = status === 'approved';
+  const isVendor = data?.partner_type === 'vendor';
+  // Tombol Setujui dimatikan bila dokumen wajib belum lengkap. Ini cerminan UI
+  // dari gate backend (A1) — backend tetap penegaknya, ini hanya supaya admin
+  // tidak menabrak 409 tanpa tahu sebabnya. Saat checklist belum termuat,
+  // tombol dibiarkan aktif: backend yang akan menolak bila memang kurang.
+  const canApprove = checklist ? checklist.can_approve : true;
+  const missingDocs = checklist?.missing ?? [];
 
   const remove = useMutation({
     mutationFn: async (reason: string) => {
@@ -133,7 +159,7 @@ export default function PartnerDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        { id: 'profil', label: 'Profil', content: <ProfileTab partner={data} /> },
+        { id: 'profil', label: 'Profil', content: <ProfileTab partner={data} checklist={checklist} /> },
         { id: 'identitas', label: 'KTP & Selfie', content: <IdentityTab partner={data} /> },
         { id: 'dokumen', label: 'Dokumen', content: <DocumentsTab partnerId={partnerId} /> },
         { id: 'layanan', label: 'Layanan', content: <ServicesTab partnerId={partnerId} /> },
@@ -151,21 +177,40 @@ export default function PartnerDetailPage() {
         backLabel="Semua mitra"
         isLoading={isLoading}
         error={error}
-        title={data?.name ?? '—'}
+        /* V4 §7.2.2: judul = nama yang DILIHAT PELANGGAN. Untuk vendor itu nama
+           merek; nama legal & nama PIC muncul di subtitle. Admin yang memverifikasi
+           harus melihat ketiganya bersamaan — tanpa itu ia menyetujui "PT Bersih
+           Jaya" sambil hanya membaca "Budi Santoso". */
+        title={(data && (nstr(data.display_name) || data.name)) ?? '—'}
         subtitle={
           data && (
             <span>
+              {isVendor && (
+                <>
+                  <strong>{nstr(data.legal_entity_name) || '—'}</strong>
+                  {nstr(data.entity_form) ? ` · ${nstr(data.entity_form)}` : ''} · PIC:{' '}
+                  {nstr(data.pic_name) || data.name}
+                  {' · '}
+                </>
+              )}
               {nstr(data.phone) || nstr(data.email) || 'tanpa kontak'} · mendaftar{' '}
               {formatDateTime(data.submitted_at)}
             </span>
           )
         }
         badges={
-          status && (
-            <Badge variant={partnerStatusVariant(status)}>
-              {PARTNER_STATUS_LABELS[status] || status}
-            </Badge>
-          )
+          <>
+            {status && (
+              <Badge variant={partnerStatusVariant(status)}>
+                {PARTNER_STATUS_LABELS[status] || status}
+              </Badge>
+            )}
+            {data && (
+              <Badge variant={isVendor ? 'info' : 'neutral'}>
+                {isVendor ? 'Badan Usaha' : 'Perorangan'}
+              </Badge>
+            )}
+          </>
         }
         actions={
           data && (
@@ -181,6 +226,10 @@ export default function PartnerDetailPage() {
                 <Pencil className="size-4" />
                 Edit profil
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setAction('editIdentity')}>
+                <BadgeCheck className="size-4" />
+                Edit identitas
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setAction('editBank')}>
                 <Landmark className="size-4" />
                 Rekening
@@ -189,7 +238,16 @@ export default function PartnerDetailPage() {
                   mengunci status, dulu hanya UI yang menyembunyikan tombolnya
                   begitu keputusan diambil — sehingga salah klik tak bisa dikoreksi. */}
               {!isApproved && (
-                <Button size="sm" onClick={() => setAction('approve')} disabled={verify.isPending}>
+                <Button
+                  size="sm"
+                  onClick={() => setAction('approve')}
+                  disabled={verify.isPending || !canApprove}
+                  title={
+                    canApprove
+                      ? undefined
+                      : `Dokumen wajib belum disetujui: ${missingDocs.join(', ')}`
+                  }
+                >
                   <Check className="size-4" />
                   {status === 'rejected' ? 'Tinjau ulang & setujui' : 'Setujui'}
                 </Button>
@@ -236,6 +294,19 @@ export default function PartnerDetailPage() {
         }
         tabs={tabs}
       />
+
+      {data && action === 'editIdentity' && (
+        <EditPartnerIdentityDialog
+          partner={data}
+          onClose={() => setAction(null)}
+          onSaved={() => {
+            setAction(null);
+            qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
+            qc.invalidateQueries({ queryKey: ['partner-checklist', partnerId] });
+            qc.invalidateQueries({ queryKey: ['partners'] });
+          }}
+        />
+      )}
 
       {data && action === 'editProfile' && (
         <EditPartnerProfileDialog
@@ -345,15 +416,71 @@ export default function PartnerDetailPage() {
   );
 }
 
-function ProfileTab({ partner }: { partner: PartnerDetailRow }) {
+function ProfileTab({
+  partner,
+  checklist,
+}: {
+  partner: PartnerDetailRow;
+  checklist?: VerificationChecklist;
+}) {
   const [showKtp, setShowKtp] = useState(false);
   const ktp = nstr(partner.decrypted_ktp);
+  const isVendor = partner.partner_type === 'vendor';
+
+  // §7.2.5: nama rekening vs nama legal. Ejaan rekening bank sering berbeda
+  // ("PT" disingkat, nama dipotong), jadi ini PERINGATAN saja — bukan penolakan.
+  // Keputusan tetap milik admin yang memegang dokumennya.
+  const expectedName = isVendor ? nstr(partner.legal_entity_name) : partner.name;
+  const bankName = nstr(partner.bank_account_name);
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const bankNameMismatch =
+    !!bankName && !!expectedName && !normalize(bankName).includes(normalize(expectedName).slice(0, 8));
 
   return (
     <div className="space-y-4">
+      {checklist && !checklist.can_approve && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          <p className="font-medium">Belum bisa disetujui — dokumen wajib belum lengkap</p>
+          <ul className="mt-1 list-inside list-disc">
+            {checklist.items
+              .filter((i) => !i.satisfied)
+              .map((i) => (
+                <li key={i.doc_type}>
+                  {i.label} —{' '}
+                  {i.status === 'MISSING' ? 'belum diunggah' : `status ${i.status}`}
+                </li>
+              ))}
+          </ul>
+          <p className="mt-2 text-xs">
+            Setujui dokumennya di tab <strong>Dokumen</strong> terlebih dulu.
+          </p>
+        </div>
+      )}
+
+      {isVendor && (
+        <EntitySection
+          title="Data Badan Usaha"
+          description="Identitas hukum mitra. Hanya bisa diubah lewat tombol Edit identitas — mitra tidak dapat mengubahnya sendiri."
+        >
+          <FieldGrid columns={3}>
+            <Field label="Nama tampil (dilihat pelanggan)" value={nstr(partner.display_name)} />
+            <Field label="Nama badan hukum" value={nstr(partner.legal_entity_name)} />
+            <Field label="Bentuk badan usaha" value={nstr(partner.entity_form)} />
+            <Field label="NIB" value={nstr(partner.nib)} mono />
+            <Field label="PIC" value={nstr(partner.pic_name)} />
+            <Field label="Jabatan PIC" value={nstr(partner.pic_position)} />
+            <Field label="Telepon usaha" value={nstr(partner.business_phone)} />
+            <Field label="Email usaha" value={nstr(partner.business_email)} />
+          </FieldGrid>
+        </EntitySection>
+      )}
+
       <EntitySection title="Identitas">
         <FieldGrid columns={3}>
-          <Field label="Nama" value={partner.name} />
+          <Field
+            label={isVendor ? 'Nama PIC (pemegang akun)' : 'Nama'}
+            value={partner.name}
+          />
           <Field label="Telepon" value={nstr(partner.phone)} />
           <Field label="Email" value={nstr(partner.email)} />
           <Field label="Akun terdaftar" value={formatDateTime(partner.user_created_at)} />
@@ -390,6 +517,14 @@ function ProfileTab({ partner }: { partner: PartnerDetailRow }) {
           <Field label="No. rekening" value={nstr(partner.bank_account_number)} mono />
           <Field label="Atas nama" value={nstr(partner.bank_account_name)} />
         </FieldGrid>
+        {bankNameMismatch && (
+          <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            Nama rekening <strong>{bankName}</strong> tidak mirip dengan{' '}
+            {isVendor ? 'nama badan hukum' : 'nama mitra'} <strong>{expectedName}</strong>.
+            Ejaan rekening bank memang sering berbeda — periksa dokumennya sebelum
+            memutuskan, jangan langsung menolak.
+          </p>
+        )}
       </EntitySection>
 
       {/* F4: Basecamp & area layanan — data verifikasi yang terkunci guard F1.
@@ -481,6 +616,191 @@ function DocImage({ label, url }: { label: string; url: string | null }) {
         </div>
       )}
     </div>
+  );
+}
+
+// V4 §7.2.7: satu-satunya jalur mengubah tipe mitra & identitas badan usaha.
+// Mengubah tipe MENURUNKAN status verifikasi ke pending — peringatannya
+// ditampilkan supaya admin tidak melakukannya tanpa sadar.
+function EditPartnerIdentityDialog({
+  partner,
+  onClose,
+  onSaved,
+}: {
+  partner: PartnerDetailRow;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState<UpdatePartnerIdentityPayload>({
+    partner_type: partner.partner_type,
+    reason: '',
+    display_name: nstr(partner.display_name) ?? '',
+    legal_entity_name: nstr(partner.legal_entity_name) ?? '',
+    entity_form: nstr(partner.entity_form) ?? '',
+    npwp: '',
+    nib: nstr(partner.nib) ?? '',
+    pic_name: nstr(partner.pic_name) ?? '',
+    pic_position: nstr(partner.pic_position) ?? '',
+    business_phone: nstr(partner.business_phone) ?? '',
+    business_email: nstr(partner.business_email) ?? '',
+  });
+  const set = <K extends keyof UpdatePartnerIdentityPayload>(
+    k: K,
+    v: UpdatePartnerIdentityPayload[K],
+  ) => setForm((f) => ({ ...f, [k]: v }));
+
+  const isVendor = form.partner_type === 'vendor';
+  const typeChanged = form.partner_type !== partner.partner_type;
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/partners/${partner.partner_id}/identity`, {
+        method: 'PATCH',
+        body: JSON.stringify(form),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success(
+        typeChanged
+          ? 'Identitas diperbarui. Status verifikasi turun ke pending.'
+          : 'Identitas mitra diperbarui',
+      );
+      onSaved();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Modal open onClose={onClose} title="Edit Identitas Mitra">
+      <div className="space-y-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="ident-type">Tipe mitra</Label>
+          <select
+            id="ident-type"
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            value={form.partner_type}
+            onChange={(e) => set('partner_type', e.target.value as PartnerType)}
+          >
+            <option value="individual">Perorangan</option>
+            <option value="vendor">Badan Usaha / Vendor</option>
+          </select>
+        </div>
+
+        {typeChanged && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            Mengubah tipe mitra mengubah subjek hukum kontrak, jadi status
+            verifikasi otomatis turun ke <strong>pending</strong> dan mitra harus
+            diverifikasi ulang. Mitra akan menerima notifikasi.
+          </p>
+        )}
+
+        {isVendor && (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-display">Nama tampil (dilihat pelanggan)</Label>
+              <Input
+                id="ident-display"
+                value={form.display_name}
+                onChange={(e) => set('display_name', e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-legal">Nama badan hukum</Label>
+              <Input
+                id="ident-legal"
+                value={form.legal_entity_name}
+                onChange={(e) => set('legal_entity_name', e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-form">Bentuk badan usaha</Label>
+              <select
+                id="ident-form"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={form.entity_form}
+                onChange={(e) => set('entity_form', e.target.value)}
+              >
+                <option value="">— pilih —</option>
+                {ENTITY_FORMS.map((f) => (
+                  <option key={f} value={f}>
+                    {f}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-npwp">NPWP (kosongkan bila tidak diubah)</Label>
+              <Input
+                id="ident-npwp"
+                value={form.npwp}
+                onChange={(e) => set('npwp', e.target.value)}
+                placeholder="Tersimpan terenkripsi — nilai lama tidak ditampilkan"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-nib">NIB</Label>
+              <Input id="ident-nib" value={form.nib} onChange={(e) => set('nib', e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-pic">Nama PIC</Label>
+              <Input
+                id="ident-pic"
+                value={form.pic_name}
+                onChange={(e) => set('pic_name', e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-picpos">Jabatan PIC</Label>
+              <Input
+                id="ident-picpos"
+                value={form.pic_position}
+                onChange={(e) => set('pic_position', e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-bphone">Telepon usaha</Label>
+              <Input
+                id="ident-bphone"
+                value={form.business_phone}
+                onChange={(e) => set('business_phone', e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="ident-bemail">Email usaha</Label>
+              <Input
+                id="ident-bemail"
+                value={form.business_email}
+                onChange={(e) => set('business_email', e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="ident-reason">Alasan perubahan (wajib)</Label>
+          <Textarea
+            id="ident-reason"
+            rows={3}
+            value={form.reason}
+            onChange={(e) => set('reason', e.target.value)}
+            placeholder="Tercatat di audit log…"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-border pt-4">
+          <Button variant="ghost" onClick={onClose}>
+            Batal
+          </Button>
+          <Button
+            onClick={() => save.mutate()}
+            disabled={save.isPending || !form.reason.trim()}
+          >
+            Simpan identitas
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
