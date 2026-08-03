@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EntitySection } from '@/components/ui/entity-page';
 import { CenteredSpinner } from '@/components/ui/feedback';
+import ProfileForm from './_components/ProfileForm';
 
 export default function SettingsPage() {
   const qc = useQueryClient();
@@ -72,6 +73,7 @@ function SettingsForm({
     withdrawal_fee: String(settings.withdrawal_fee),
     max_withdrawal: String(settings.max_withdrawal),
     max_wallet_adjustment: String(settings.max_wallet_adjustment),
+    max_additional_fee: String(settings.max_additional_fee),
   });
   const [confirming, setConfirming] = useState(false);
 
@@ -89,6 +91,7 @@ function SettingsForm({
         withdrawal_fee: Number(form.withdrawal_fee),
         max_withdrawal: Number(form.max_withdrawal),
         max_wallet_adjustment: Number(form.max_wallet_adjustment),
+        max_additional_fee: Number(form.max_additional_fee),
       };
       for (const [key, value] of Object.entries(numbers)) {
         if (Number.isNaN(value) || value < 0) throw new Error(`Nilai ${key} tidak valid`);
@@ -177,6 +180,11 @@ function SettingsForm({
               'Batas penyesuaian saldo sekali aksi',
               'Penyesuaian saldo manual di atas nilai ini ditolak backend.',
             )}
+            {field(
+              'max_additional_fee',
+              'Batas biaya tambahan per item',
+              'Plafon tagihan tambahan yang boleh diajukan mitra; menahan salah ketik nol.',
+            )}
           </div>
         </EntitySection>
 
@@ -187,6 +195,10 @@ function SettingsForm({
           </p>
           <Button onClick={() => setConfirming(true)}>Simpan setelan</Button>
         </div>
+
+        {/* Identitas & kontak — disimpan terpisah (tabel platform_profile),
+            jadi punya tombol Simpan sendiri. */}
+        <ProfileForm />
       </div>
 
       <ConfirmDialog
