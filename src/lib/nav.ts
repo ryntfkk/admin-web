@@ -15,6 +15,7 @@ import {
   Bell,
   MessageSquare,
   Settings,
+  FileText,
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
@@ -75,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Notifikasi', href: '/dashboard/notifications', icon: Bell, keywords: ['notification', 'pemberitahuan', 'broadcast', 'pengumuman'] },
       { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, keywords: ['jejak', 'riwayat admin', 'log'] },
       { label: 'Setelan', href: '/dashboard/settings', icon: Settings, keywords: ['komisi', 'tarif', 'biaya', 'platform', 'konfigurasi'] },
+      { label: 'Dokumen Legal', href: '/dashboard/legal', icon: FileText, keywords: ['syarat', 'ketentuan', 'privasi', 's&k', 'terms', 'privacy', 'consent', 'persetujuan'] },
       { label: 'Admin', href: '/dashboard/admins', icon: ShieldCheck, keywords: ['pengelola', 'akun admin', 'akses'] },
     ],
   },

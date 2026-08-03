@@ -599,6 +599,39 @@ export interface PlatformSettings {
   withdrawal_fee: number;
   max_withdrawal: number;
   max_wallet_adjustment: number;
+  max_additional_fee: number;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+// ── Dokumen Legal (Fase 5) ───────────────────────────────────────────
+export type LegalSlug = 'terms' | 'privacy' | 'partner-terms' | 'cancellation';
+
+export interface LegalDocumentRow {
+  id: string;
+  slug: LegalSlug;
+  version: number;
+  title: string;
+  summary: string;
+  /** Hanya terisi pada GET detail; daftar sengaja tidak membawanya. */
+  body_md?: string;
+  effective_at: string;
+  /** null = draf, belum pernah tayang. */
+  published_at: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export interface PlatformProfile {
+  legal_name: string;
+  brand_name: string;
+  business_id: string;
+  address: string;
+  support_email: string;
+  support_phone: string;
+  support_whatsapp: string;
+  dpo_email: string;
+  withdrawal_sla: string;
   updated_by: string | null;
   updated_at: string;
 }
