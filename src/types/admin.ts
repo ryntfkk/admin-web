@@ -635,3 +635,19 @@ export interface PlatformProfile {
   updated_by: string | null;
   updated_at: string;
 }
+
+// ── FAQ (Fase 4) ─────────────────────────────────────────────────────
+export type FaqAudience = 'CUSTOMER' | 'PARTNER';
+
+export interface FaqRow {
+  id: string;
+  audience: FaqAudience;
+  category: string;
+  question: string;
+  /** Boleh memuat token {{...}}; diinterpolasi saat render di web. */
+  answer: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
