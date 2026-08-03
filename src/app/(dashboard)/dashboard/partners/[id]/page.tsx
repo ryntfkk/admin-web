@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldOff, ShieldX, Trash2 } from 'lucide-react';
+import { Ban, Check, ExternalLink, Eye, EyeOff, Landmark, Pencil, ShieldCheck, ShieldOff, ShieldX, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
 import type { PartnerDetailRow } from '@/types/admin';
@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
 import { DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 
-type VerifyAction = 'approve' | 'reject' | 'revoke' | 'delete' | 'editProfile' | 'editBank' | null;
+type VerifyAction = 'approve' | 'reject' | 'revoke' | 'suspend' | 'unsuspend' | 'delete' | 'editProfile' | 'editBank' | null;
 
 export default function PartnerDetailPage() {
   const { id: partnerId } = useParams<{ id: string }>();
@@ -74,6 +74,40 @@ export default function PartnerDetailPage() {
       qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
       qc.invalidateQueries({ queryKey: ['partners'] });
       qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // F4: suspend/unsuspend mitra (pakai endpoint user, mitra = user dengan role partner).
+  // Suspend mencabut sesi aktif langsung — mitra tidak bisa login/menerima pesanan.
+  const suspend = useMutation({
+    mutationFn: async (payload: { duration_hours: number; reason: string }) => {
+      const res = await fetchAPI(`/admin/users/${data?.user_id}/suspend`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Mitra di-suspend');
+      setAction(null);
+      qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const unsuspend = useMutation({
+    mutationFn: async () => {
+      const res = await fetchAPI(`/admin/users/${data?.user_id}/unsuspend`, {
+        method: 'PUT',
+        body: JSON.stringify({ notes: 'Reaktivasi mitra dari halaman partner detail' }),
+      });
+      if (!res.success) throw new Error(getErrorMessage(res));
+    },
+    onSuccess: () => {
+      toast.success('Mitra di-unsuspend');
+      setAction(null);
+      qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -183,6 +217,15 @@ export default function PartnerDetailPage() {
                   Tolak
                 </Button>
               )}
+              {/* F4: Suspend/Unsuspend — pakai endpoint user (mitra = user). */}
+              <Button variant="destructive" size="sm" onClick={() => setAction('suspend')}>
+                <Ban className="size-4" />
+                Suspend
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setAction('unsuspend')}>
+                <ShieldCheck className="size-4" />
+                Unsuspend
+              </Button>
               <Button variant="destructive" size="sm" onClick={() => setAction('delete')}>
                 <Trash2 className="size-4" />
                 Hapus
@@ -270,6 +313,32 @@ export default function PartnerDetailPage() {
         // mengetik ulang namanya supaya tidak terjadi karena salah klik.
         confirmPhrase={data?.name}
         loading={revoke.isPending}
+      />
+
+      {/* F4: Suspend mitra — duration 0 = permanen sampai unsuspend. */}
+      <ConfirmDialog
+        open={action === 'suspend'}
+        onClose={() => setAction(null)}
+        onConfirm={(reason) => suspend.mutate({ duration_hours: 0, reason })}
+        variant="danger"
+        title="Suspend mitra?"
+        description="Mitra tidak bisa login/menerima pesanan. Sesi aktif langsung dicabut. Berlaku permanen sampai di-unsuspend. Alasan tercatat di audit log."
+        confirmLabel="Suspend"
+        requireReason
+        reasonLabel="Alasan"
+        reasonPlaceholder="Jelaskan alasan suspend…"
+        confirmPhrase={data?.name}
+        loading={suspend.isPending}
+      />
+
+      <ConfirmDialog
+        open={action === 'unsuspend'}
+        onClose={() => setAction(null)}
+        onConfirm={() => unsuspend.mutate()}
+        title="Unsuspend mitra?"
+        description="Mitra dapat login kembali dan menerima pesanan. Sesi denylist dicabut."
+        confirmLabel="Unsuspend"
+        loading={unsuspend.isPending}
       />
     </>
   );

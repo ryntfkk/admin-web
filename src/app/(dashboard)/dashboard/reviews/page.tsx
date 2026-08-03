@@ -184,15 +184,18 @@ function ReviewDetailModal({
   });
 
   const del = useMutation({
-    mutationFn: async () => {
+    // Alasan WAJIB ikut terkirim: ia disimpan di reviews.deleted_reason dan di
+    // payload audit. Sebelumnya dialog meminta alasan lalu membuangnya.
+    mutationFn: async (reason: string) => {
       const res = await fetchAPI(`/admin/reviews/${reviewId}`, {
         method: 'DELETE',
+        body: JSON.stringify({ reason }),
       });
       if (!res.success) throw new Error(getErrorMessage(res));
       return res;
     },
     onSuccess: () => {
-      toast.success('Review dihapus');
+      toast.success('Review diarsipkan');
       onDone();
       onClose();
     },
@@ -317,17 +320,19 @@ function ReviewDetailModal({
         </div>
       )}
 
-      {/* Hapus review = HARD DELETE di backend (barisnya diarsipkan ke audit
-          log, tapi tidak bisa dikembalikan lewat UI). "Sembunyikan" hampir
-          selalu jawaban yang benar, jadi jalur hapus dibuat lebih berfriksi. */}
+      {/* Hapus review = SOFT DELETE sejak migrasi 000055: barisnya tetap utuh
+          (foto bukti kerja, sub-rating, tanggapan mitra) dan bisa dibuka lagi
+          dari arsip — bukti pekerjaan mitra tidak boleh musnah, lihat
+          PLAN-KONTEN-LEGAL-CMS.md §3.5. "Sembunyikan" tetap jawaban yang benar
+          untuk kasus biasa, jadi jalur hapus sengaja dibuat lebih berfriksi. */}
       <ConfirmDialog
         open={confirmingDelete}
         onClose={() => setConfirmingDelete(false)}
-        onConfirm={() => del.mutate()}
+        onConfirm={(reason) => del.mutate(reason)}
         variant="danger"
-        title="Hapus review ini permanen?"
-        description="Review dihapus dari database dan rating mitra dihitung ulang tanpa review ini. Bila hanya ingin menyembunyikannya dari publik, pakai tombol Sembunyikan."
-        confirmLabel="Hapus permanen"
+        title="Hapus review ini dari publik?"
+        description="Review hilang dari profil mitra dan rating dihitung ulang tanpa review ini. Isinya TETAP disimpan sebagai bukti (termasuk foto & tanggapan mitra) dan bisa dibuka kembali dari arsip review terhapus. Bila hanya ingin menyembunyikannya sementara, pakai tombol Sembunyikan."
+        confirmLabel="Hapus & arsipkan"
         requireReason
         reasonLabel="Alasan penghapusan"
         confirmPhrase="HAPUS"
