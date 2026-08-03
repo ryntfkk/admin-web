@@ -161,12 +161,22 @@ function SummaryTab({ dispute }: { dispute: DisputeDetailRow }) {
           <Field
             label="Mitra"
             value={
-              <Link
-                href={`/dashboard/partners/${dispute.partner_id}`}
-                className="underline underline-offset-4"
-              >
-                {dispute.partner_name}
-              </Link>
+              <span className="flex flex-col">
+                <Link
+                  href={`/dashboard/partners/${dispute.partner_id}`}
+                  className="underline underline-offset-4"
+                >
+                  {dispute.partner_name}
+                </Link>
+                {/* Nama legal hanya ditampilkan bila BERBEDA dari nama tampil —
+                    untuk mitra perorangan keduanya sama dan barisnya cuma bising. */}
+                {dispute.partner_legal_name &&
+                  dispute.partner_legal_name !== dispute.partner_name && (
+                    <span className="text-xs text-muted-foreground">
+                      Badan hukum: {dispute.partner_legal_name}
+                    </span>
+                  )}
+              </span>
             }
           />
           <Field

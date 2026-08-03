@@ -77,7 +77,25 @@ export default function WithdrawalsPage() {
   });
 
   const columns: Column<WithdrawalRow>[] = [
-    { key: 'user', header: 'Pengguna', cell: (w) => <span className="font-medium">{w.user_name}</span> },
+    {
+      key: 'user',
+      header: 'Penerima',
+      // Untuk mitra badan usaha, user_name adalah nama PIC — bukan penerima
+      // dananya. Nama badan hukum ditampilkan di depan supaya admin tidak
+      // menyetujui transfer ke rekening perusahaan sambil membaca nama orang.
+      cell: (w) => {
+        const legal = nstr(w.partner_legal_name);
+        const isEntity = !!legal && legal !== w.user_name;
+        return (
+          <div className="flex flex-col">
+            <span className="font-medium">{isEntity ? legal : w.user_name}</span>
+            {isEntity && (
+              <span className="text-xs text-muted-foreground">PIC: {w.user_name}</span>
+            )}
+          </div>
+        );
+      },
+    },
     {
       key: 'bank',
       header: 'Rekening',
@@ -150,7 +168,18 @@ export default function WithdrawalsPage() {
                 <Banknote className="size-5" />
               </div>
               <div>
-                <p className="font-medium">{selected.user_name}</p>
+                <p className="font-medium">
+                  {nstr(selected.partner_legal_name) &&
+                  nstr(selected.partner_legal_name) !== selected.user_name
+                    ? nstr(selected.partner_legal_name)
+                    : selected.user_name}
+                </p>
+                {nstr(selected.partner_legal_name) &&
+                  nstr(selected.partner_legal_name) !== selected.user_name && (
+                    <p className="text-xs text-muted-foreground">
+                      Badan usaha · PIC: {selected.user_name}
+                    </p>
+                  )}
                 <p className="text-sm text-muted-foreground">
                   {nstr(selected.bank_code)} · {nstr(selected.bank_account_number)} ·{' '}
                   {nstr(selected.bank_account_name)}

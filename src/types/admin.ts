@@ -173,7 +173,11 @@ export interface DisputeDetailRow {
   order_amount: number;
   customer_name: string;
   partner_id: string;
+  /** Nama TAMPIL mitra (nama merek untuk vendor). */
   partner_name: string;
+  /** Nama badan hukum mitra. Admin yang memutus sengketa harus tahu badan hukum
+   *  mana yang terlibat, bukan hanya nama merek atau nama PIC (§2.3). */
+  partner_legal_name: string;
   /** Status order saat ini — resolusi hanya sah bila 'DISPUTED'. */
   order_status: string;
   /** Total dana terkumpul (order + biaya tambahan PAID) = plafon refund + payout. */
@@ -189,7 +193,13 @@ export interface WithdrawalRow {
   created_at: string;
   transaction_id: NullUUID;
   user_id: string;
+  // Nama ORANG pemegang akun. Untuk mitra badan usaha ini nama PIC, BUKAN
+  // penerima dana — lihat partner_legal_name.
   user_name: string;
+  // Nama badan hukum penerima dana. Null untuk penarik yang bukan mitra.
+  // Wajib ditampilkan di layar ini: tanpa itu admin menyetujui transfer ke
+  // rekening perusahaan sambil layarnya hanya menulis nama PIC (§2.3).
+  partner_legal_name: NullString;
   bank_code: NullString;
   bank_account_number: NullString;
   bank_account_name: NullString;
