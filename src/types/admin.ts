@@ -651,3 +651,33 @@ export interface FaqRow {
   created_at: string;
   updated_at: string;
 }
+
+// ── Retensi & Pemusnahan Data (Fase 7) ───────────────────────────────
+export type RetentionCategory = 'audit_logs' | 'login_history' | 'chat_messages' | 'reviews';
+
+export interface RetentionStatusRow {
+  category: RetentionCategory;
+  label: string;
+  sumber: string;
+  catatan: string;
+  retention_months: number;
+  is_enabled: boolean;
+  updated_by: string;
+  updated_at: string;
+  /** Batas waktu: baris lebih tua dari ini yang jadi kandidat. */
+  cutoff_at: string;
+  candidates: number;
+  /** Sudah lewat masa simpan tapi dilewati karena terkait sengketa berjalan. */
+  skipped: number;
+  oldest_at: string | null;
+}
+
+export interface PurgeRunRow {
+  category: RetentionCategory;
+  cutoff_at: string;
+  rows_deleted: number;
+  rows_skipped: number;
+  executed_by: string;
+  executed_at: string;
+  note: string;
+}
