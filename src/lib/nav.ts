@@ -1,4 +1,5 @@
 import {
+  ClipboardList,
   LayoutDashboard,
   BadgeCheck,
   Scale,
@@ -79,6 +80,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: 'Audit Log', href: '/dashboard/audit-logs', icon: ScrollText, keywords: ['jejak', 'riwayat admin', 'log'] },
       { label: 'Setelan', href: '/dashboard/settings', icon: Settings, keywords: ['komisi', 'tarif', 'biaya', 'platform', 'konfigurasi'] },
       { label: 'FAQ', href: '/dashboard/faqs', icon: HelpCircle, keywords: ['bantuan', 'pertanyaan', 'help', 'tanya jawab'] },
+      { label: 'Persyaratan Pelanggan', href: '/dashboard/requirements', icon: ClipboardList, keywords: ['persyaratan', 'requirement', 'katalog', 'stop kontak', 'sumber air', 'disiapkan'] },
       { label: 'Retensi Data', href: '/dashboard/retention', icon: DatabaseBackup, keywords: ['pemusnahan', 'hapus data', 'masa simpan', 'privasi', 'purge'] },
       { label: 'Dokumen Legal', href: '/dashboard/legal', icon: FileText, keywords: ['syarat', 'ketentuan', 'privasi', 's&k', 'terms', 'privacy', 'consent', 'persetujuan'] },
       { label: 'Admin', href: '/dashboard/admins', icon: ShieldCheck, keywords: ['pengelola', 'akun admin', 'akses'] },

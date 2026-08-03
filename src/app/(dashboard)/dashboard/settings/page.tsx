@@ -75,6 +75,9 @@ function SettingsForm({
     max_wallet_adjustment: String(settings.max_wallet_adjustment),
     max_additional_fee: String(settings.max_additional_fee),
   });
+  // Sakelar penegakan persyaratan — bukan angka, jadi di luar `form` yang
+  // seluruhnya string numerik.
+  const [requireReqAck, setRequireReqAck] = useState(settings.require_requirements_ack ?? false);
   const [confirming, setConfirming] = useState(false);
 
   const save = useMutation({
@@ -102,7 +105,11 @@ function SettingsForm({
 
       const res = await fetchAPI('/admin/settings', {
         method: 'PUT',
-        body: JSON.stringify({ ...numbers, platform_fee_rate: percent / 100 }),
+        body: JSON.stringify({
+          ...numbers,
+          platform_fee_rate: percent / 100,
+          require_requirements_ack: requireReqAck,
+        }),
       });
       if (!res.success) throw new Error(getErrorMessage(res));
     },
@@ -186,6 +193,29 @@ function SettingsForm({
               'Plafon tagihan tambahan yang boleh diajukan mitra; menahan salah ketik nol.',
             )}
           </div>
+        </EntitySection>
+
+        <EntitySection
+          title="Persyaratan pelanggan"
+          description="Persyaratan yang harus disiapkan pelanggan sebelum mitra datang (mis. stop kontak, sumber air)."
+        >
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={requireReqAck}
+              onChange={(e) => setRequireReqAck(e.target.checked)}
+              className="mt-1 size-4 shrink-0"
+            />
+            <span className="text-sm">
+              <span className="font-medium">Wajibkan persetujuan sebelum bayar</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Bila aktif, pesanan yang memuat persyaratan <strong>wajib</strong> ditolak
+                (400) bila pelanggan belum menyetujuinya. Nyalakan hanya setelah aplikasi
+                web/mobile terbaru benar-benar mengirim persetujuan itu — versi lama akan
+                gagal memesan seluruhnya. Bisa dimatikan lagi kapan saja tanpa deploy.
+              </span>
+            </span>
+          </label>
         </EntitySection>
 
         <div className="flex items-center justify-between gap-3">

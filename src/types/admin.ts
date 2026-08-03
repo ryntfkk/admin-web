@@ -658,8 +658,36 @@ export interface PlatformSettings {
   max_withdrawal: number;
   max_wallet_adjustment: number;
   max_additional_fee: number;
+  // R3: penegakan persetujuan persyaratan pelanggan. Bisa dibalik seketika
+  // tanpa deploy bila ada klien lama yang belum mengirim fieldnya.
+  require_requirements_ack: boolean;
   updated_by: string | null;
   updated_at: string;
+}
+
+// ── Katalog persyaratan pelanggan (R3) ───────────────────────────────
+export const REQUIREMENT_KINDS = [
+  'UTILITY',
+  'ACCESS',
+  'SPACE',
+  'SAFETY',
+  'PRESENCE',
+  'OTHER',
+] as const;
+export type RequirementKind = (typeof REQUIREMENT_KINDS)[number];
+
+export interface RequirementCatalogItem {
+  id: string;
+  code: string;
+  kind: RequirementKind;
+  label: string;
+  hint: string;
+  icon: string;
+  sort_order: number;
+  is_active: boolean;
+  // Jumlah layanan yang memakai item ini — dipakai memperingatkan dampak
+  // sebelum menonaktifkan.
+  used_by_count: number;
 }
 
 // ── Dokumen Legal (Fase 5) ───────────────────────────────────────────
