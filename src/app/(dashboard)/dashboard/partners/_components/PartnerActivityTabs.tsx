@@ -382,8 +382,16 @@ export function PartnerPerformanceTab({ partnerId }: { partnerId: string }) {
           value={formatDuration(data.median_confirm_seconds)}
           note="median, bukan rata-rata"
         />
-        <Stat label="GMV bruto" value={formatIDR(data.gross_gmv)} note="pesanan selesai" />
-        <Stat label="Payout bersih" value={formatIDR(data.net_payout)} note="setelah komisi" />
+        <Stat
+          label="Nilai jasa bruto"
+          value={formatIDR(data.gross_gmv)}
+          note="pesanan selesai, termasuk biaya tambahan"
+        />
+        <Stat
+          label="Payout bersih"
+          value={formatIDR(data.net_payout)}
+          note={`setelah komisi ${formatIDR(data.gross_gmv - data.net_payout)}`}
+        />
       </div>
     </EntitySection>
   );
