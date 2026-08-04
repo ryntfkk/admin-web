@@ -6,7 +6,13 @@ import { ExternalLink } from 'lucide-react';
 
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
-import type { OrderRow, ReviewRow, WithdrawalRow } from '@/types/admin';
+import type {
+  DisputeRow,
+  OrderRow,
+  PartnerPerformance,
+  ReviewRow,
+  WithdrawalRow,
+} from '@/types/admin';
 import { formatDateTime, formatIDR } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { EntitySection } from '@/components/ui/entity-page';
@@ -233,6 +239,151 @@ export function PartnerWithdrawalsTab({ userId }: { userId: string }) {
             </span>
           </div>
         ))}
+      </div>
+    </EntitySection>
+  );
+}
+
+// ── Sengketa ────────────────────────────────────────────────────────
+
+const DISPUTE_STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
+  RESOLVED: 'success',
+  REVIEWING: 'warning',
+  OPEN: 'danger',
+};
+
+export function PartnerDisputesTab({ partnerId }: { partnerId: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['partner-disputes', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<{ data: DisputeRow[] }>(
+        `/admin/disputes?partner_id=${partnerId}&per_page=50`,
+      );
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data?.data ?? [];
+    },
+  });
+
+  if (isLoading) return <CenteredSpinner />;
+  if (error) return <EmptyState title="Gagal memuat sengketa" note={(error as Error).message} />;
+  if (!data || data.length === 0) return <EmptyState title="Mitra ini belum pernah tersengketa" />;
+
+  // Pola berulang = alasan paling kuat untuk menindak. Dihitung per JENIS,
+  // bukan total: lima sengketa "no show" berarti hal yang sangat berbeda dari
+  // lima sengketa dengan jenis berbeda-beda.
+  const byType = data.reduce<Record<string, number>>((acc, d) => {
+    acc[d.dispute_type] = (acc[d.dispute_type] ?? 0) + 1;
+    return acc;
+  }, {});
+  const recurring = Object.entries(byType)
+    .filter(([, n]) => n > 1)
+    .map(([t, n]) => `${t} x${n}`);
+
+  return (
+    <EntitySection
+      title="Sengketa"
+      description={
+        recurring.length > 0
+          ? `${data.length} sengketa. Pola berulang: ${recurring.join(', ')}.`
+          : `${data.length} sengketa, tidak ada jenis yang berulang.`
+      }
+    >
+      <div className="space-y-2">
+        {data.map((d) => (
+          <Link
+            key={d.id}
+            href={`/dashboard/disputes/${d.id}`}
+            className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:border-foreground/30"
+          >
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium">{d.dispute_type}</span>
+                <Badge variant={DISPUTE_STATUS_VARIANT[d.status] ?? 'neutral'}>{d.status}</Badge>
+                {d.has_evidence && <Badge variant="neutral">Ada bukti</Badge>}
+                {/* Sengketa tanpa tanggapan mitra adalah sinyal tersendiri —
+                    bukan soal siapa benar, tapi mitra yang tidak menjawab. */}
+                {!d.has_response && <Badge variant="warning">Belum ditanggapi</Badge>}
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {d.customer_name} · order {d.order_number} · {formatDateTime(d.created_at)}
+              </p>
+              {d.resolution_type?.Valid && (
+                <p className="text-xs text-muted-foreground">
+                  Putusan: {d.resolution_type.ResolutionType}
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-sm font-medium">{formatIDR(d.order_amount)}</span>
+              <ExternalLink className="size-3.5 text-muted-foreground" />
+            </div>
+          </Link>
+        ))}
+      </div>
+    </EntitySection>
+  );
+}
+
+// ── Performa ────────────────────────────────────────────────────────
+
+function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold tabular-nums">{value}</p>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds <= 0) return '-';
+  if (seconds < 60) return `${Math.round(seconds)} detik`;
+  if (seconds < 3600) return `${Math.round(seconds / 60)} menit`;
+  return `${(seconds / 3600).toFixed(1)} jam`;
+}
+
+export function PartnerPerformanceTab({ partnerId }: { partnerId: string }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['partner-performance', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<PartnerPerformance>(`/admin/partners/${partnerId}/performance`);
+      if (!res.success) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
+  if (isLoading) return <CenteredSpinner />;
+  if (error) return <EmptyState title="Gagal memuat performa" note={(error as Error).message} />;
+  if (!data) return <EmptyState title="Belum ada data performa" />;
+
+  // Persentase hanya bermakna bila ada penyebutnya. Menampilkan "0%" untuk
+  // mitra tanpa pesanan sama sekali membuatnya terlihat buruk padahal ia baru.
+  const pct = (n: number) =>
+    data.total_orders > 0 ? `${((n / data.total_orders) * 100).toFixed(1)}%` : '-';
+
+  return (
+    <EntitySection
+      title="Performa"
+      description="Dihitung server atas SELURUH riwayat mitra, bukan dari baris yang ditampilkan di tab lain."
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <Stat label="Total pesanan" value={String(data.total_orders)} />
+        <Stat label="Selesai" value={String(data.completed_orders)} note={pct(data.completed_orders)} />
+        <Stat label="Dibatalkan" value={String(data.cancelled_orders)} note={pct(data.cancelled_orders)} />
+        <Stat label="Sengketa" value={String(data.disputed_orders)} note={pct(data.disputed_orders)} />
+        <Stat
+          label="Rating"
+          value={data.total_reviews > 0 ? data.avg_rating.toFixed(2) : '-'}
+          note={`${data.total_reviews} ulasan`}
+        />
+        <Stat
+          label="Median konfirmasi"
+          value={formatDuration(data.median_confirm_seconds)}
+          note="median, bukan rata-rata"
+        />
+        <Stat label="GMV bruto" value={formatIDR(data.gross_gmv)} note="pesanan selesai" />
+        <Stat label="Payout bersih" value={formatIDR(data.net_payout)} note="setelah komisi" />
       </div>
     </EntitySection>
   );

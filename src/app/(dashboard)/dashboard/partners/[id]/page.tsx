@@ -28,7 +28,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
 import { ActionLogsTab, DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
 import {
+  PartnerDisputesTab,
   PartnerOrdersTab,
+  PartnerPerformanceTab,
   PartnerReviewsTab,
   PartnerWithdrawalsTab,
 } from '../_components/PartnerActivityTabs';
@@ -178,6 +180,12 @@ export default function PartnerDetailPage() {
           id: 'pencairan',
           label: 'Pencairan',
           content: <PartnerWithdrawalsTab userId={data.user_id} />,
+        },
+        { id: 'sengketa', label: 'Sengketa', content: <PartnerDisputesTab partnerId={partnerId} /> },
+        {
+          id: 'performa',
+          label: 'Performa',
+          content: <PartnerPerformanceTab partnerId={partnerId} />,
         },
         { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
         { id: 'aksi', label: 'Riwayat Aksi', content: <ActionLogsTab partnerId={partnerId} /> },

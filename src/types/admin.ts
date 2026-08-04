@@ -157,6 +157,24 @@ export interface DisputeRow {
   partner_name: string;
 }
 
+/**
+ * Performa mitra (§11.1 prioritas 5). Dihitung SERVER atas seluruh riwayat —
+ * bukan ringkasan dari baris yang termuat, karena angka ini jadi dasar
+ * keputusan suspensi.
+ */
+export interface PartnerPerformance {
+  total_orders: number;
+  completed_orders: number;
+  cancelled_orders: number;
+  disputed_orders: number;
+  gross_gmv: number;
+  net_payout: number;
+  avg_rating: number;
+  total_reviews: number;
+  /** MEDIAN, bukan rata-rata. 0 = belum pernah ada pesanan yang dikonfirmasi. */
+  median_confirm_seconds: number;
+}
+
 export interface DisputeDetailRow {
   id: string;
   order_id: string;
