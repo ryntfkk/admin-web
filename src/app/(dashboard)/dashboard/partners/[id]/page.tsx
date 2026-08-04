@@ -27,6 +27,11 @@ import { Modal } from '@/components/ui/modal';
 import { Textarea } from '@/components/ui/textarea';
 import { EntityPage, EntitySection, type EntityTab } from '@/components/ui/entity-page';
 import { ActionLogsTab, DocumentsTab, PortfolioTab, ServicesTab, StrikesTab, WorkingHoursTab } from '../_components/PartnerTabs';
+import {
+  PartnerOrdersTab,
+  PartnerReviewsTab,
+  PartnerWithdrawalsTab,
+} from '../_components/PartnerActivityTabs';
 
 type VerifyAction = 'approve' | 'reject' | 'revoke' | 'suspend' | 'unsuspend' | 'delete' | 'editProfile' | 'editBank' | 'editIdentity' | null;
 
@@ -165,6 +170,15 @@ export default function PartnerDetailPage() {
         { id: 'layanan', label: 'Layanan', content: <ServicesTab partnerId={partnerId} /> },
         { id: 'portfolio', label: 'Portfolio', content: <PortfolioTab partnerId={partnerId} /> },
         { id: 'jadwal', label: 'Jam Operasional', content: <WorkingHoursTab partnerId={partnerId} /> },
+        // §11.1 — halaman ini akhirnya jadi workspace operasional, bukan hanya
+        // layar KYC: aktivitas mitra bisa dibaca tanpa berpindah halaman.
+        { id: 'pesanan', label: 'Pesanan', content: <PartnerOrdersTab partnerId={partnerId} /> },
+        { id: 'ulasan', label: 'Ulasan', content: <PartnerReviewsTab partnerId={partnerId} /> },
+        {
+          id: 'pencairan',
+          label: 'Pencairan',
+          content: <PartnerWithdrawalsTab userId={data.user_id} />,
+        },
         { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
         { id: 'aksi', label: 'Riwayat Aksi', content: <ActionLogsTab partnerId={partnerId} /> },
       ]

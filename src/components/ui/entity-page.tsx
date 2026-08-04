@@ -115,7 +115,7 @@ function EntityPageInner({
             aria-label="Bagian detail"
             className="flex gap-1 overflow-x-auto border-b border-border"
           >
-            {tabs.map((tab) => {
+            {tabs.map((tab, i) => {
               const active = tab.id === activeTab?.id;
               return (
                 <button
@@ -123,6 +123,23 @@ function EntityPageInner({
                   role="tab"
                   type="button"
                   aria-selected={active}
+                  // role="tab" MENJANJIKAN navigasi panah kepada pengguna
+                  // pembaca layar. Tanpa roving tabindex + handler di bawah,
+                  // janji itu tidak ditepati: Tab berhenti di tiap tab satu per
+                  // satu dan panah tidak melakukan apa pun.
+                  tabIndex={active ? 0 : -1}
+                  onKeyDown={(e) => {
+                    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+                    e.preventDefault();
+                    const delta = e.key === 'ArrowRight' ? 1 : -1;
+                    // Membungkus di kedua ujung — perilaku baku pola tab ARIA.
+                    const next = tabs[(i + delta + tabs.length) % tabs.length];
+                    selectTab(next.id);
+                    const el = e.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[
+                      (i + delta + tabs.length) % tabs.length
+                    ] as HTMLElement | undefined;
+                    el?.focus();
+                  }}
                   onClick={() => selectTab(tab.id)}
                   className={cn(
                     '-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
@@ -176,7 +193,9 @@ export function EntitySection({
               <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
             )}
           </div>
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+          {/* flex-wrap (§11.4): tanpa ini aksi section terdorong keluar layar
+              di lebar sempit dan tidak bisa dijangkau sama sekali. */}
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}
       {children}
