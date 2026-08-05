@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { ExternalLink, FileText, Maximize2, Plus, Trash2 } from 'lucide-react';
 import { fetchAPI } from '@/lib/api';
 import { getErrorMessage } from '@/types/api';
-import type { PartnerDocument, PartnerStrike, PartnerPortfolioPhoto, PartnerServiceRow, PartnerActionLog, WorkingHour } from '@/types/admin';
+import type { PartnerDocument, PartnerStrike, PartnerPortfolioPhoto, PartnerServiceRow, PartnerActionLog, VerificationChecklist, WorkingHour } from '@/types/admin';
+import { DocumentLightbox, type LightboxItem } from './DocumentLightbox';
 import { formatDateTime } from '@/lib/format';
 import { toast } from '@/lib/store/toastStore';
 import { Badge } from '@/components/ui/badge';
@@ -154,9 +155,18 @@ const DOC_STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neu
   EXPIRED: 'neutral',
 };
 
+const isImageUrl = (url: string) => /\.(jpe?g|png|webp|gif|avif)(\?|$)/i.test(url);
+
 export function DocumentsTab({ partnerId }: { partnerId: string }) {
   const qc = useQueryClient();
   const [rejecting, setRejecting] = useState<PartnerDocument | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  // Per-id, bukan satu `review.isPending` global. Flag global mematikan tombol
+  // Setujui di SEMUA baris selama satu request berjalan, sehingga admin
+  // terpaksa menunggu bolak-balik untuk tiap dokumen.
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['partner-documents', partnerId],
@@ -167,94 +177,230 @@ export function DocumentsTab({ partnerId }: { partnerId: string }) {
     },
   });
 
+  // Daftar dokumen WAJIB datang dari checklist backend, tidak disalin ke sini.
+  // Aturannya hidup di `admin/service.go` (requiredDocsFor) dan salinan di
+  // frontend akan melenceng diam-diam begitu backend menambah jenis dokumen.
+  // Query key-nya sama dengan halaman detail, jadi ini memakai cache yang ada.
+  const { data: checklist } = useQuery({
+    queryKey: ['partner-checklist', partnerId],
+    queryFn: async () => {
+      const res = await fetchAPI<VerificationChecklist>(
+        `/admin/partners/${partnerId}/verification-checklist`,
+      );
+      if (!res.success || !res.data) throw new Error(getErrorMessage(res));
+      return res.data;
+    },
+  });
+
+  const requiredTypes = new Set((checklist?.items ?? []).map((i) => i.doc_type.toUpperCase()));
+  const docLabel = (docType: string) =>
+    checklist?.items.find((i) => i.doc_type.toUpperCase() === docType.toUpperCase())?.label ?? docType;
+
+  const reviewOne = async (docId: string, status: string, reason = '') => {
+    const res = await fetchAPI(`/admin/partners/${partnerId}/documents/${docId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, reason }),
+    });
+    if (!res.success) throw new Error(getErrorMessage(res));
+  };
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['partner-documents', partnerId] });
+    // Checklist menentukan aktif/tidaknya tombol "Setujui & Verifikasi Mitra"
+    // di halaman induk; tanpa ini admin menyetujui semua dokumen lalu melihat
+    // tombol verifikasi tetap mati sampai halaman dimuat ulang.
+    qc.invalidateQueries({ queryKey: ['partner-checklist', partnerId] });
+  };
+
   const review = useMutation({
     mutationFn: async (vars: { docId: string; status: string; reason?: string }) => {
-      const res = await fetchAPI(`/admin/partners/${partnerId}/documents/${vars.docId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: vars.status, reason: vars.reason ?? '' }),
-      });
-      if (!res.success) throw new Error(getErrorMessage(res));
+      setPendingIds((prev) => [...prev, vars.docId]);
+      try {
+        await reviewOne(vars.docId, vars.status, vars.reason ?? '');
+      } finally {
+        setPendingIds((prev) => prev.filter((id) => id !== vars.docId));
+      }
     },
     onSuccess: (_r, vars) => {
       toast.success(vars.status === 'APPROVED' ? 'Dokumen disetujui' : 'Dokumen ditolak');
       setRejecting(null);
-      qc.invalidateQueries({ queryKey: ['partner-documents', partnerId] });
+      refresh();
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const pendingRequired = (data ?? []).filter(
+    (d) => requiredTypes.has(d.doc_type.toUpperCase()) && d.status !== 'APPROVED',
+  );
+
+  /**
+   * Menyetujui seluruh dokumen wajib yang belum disetujui.
+   *
+   * Berurutan, bukan `Promise.all`: tiap panggilan menulis audit log dan
+   * menyentuh baris mitra yang sama. Kegagalan per dokumen dikumpulkan lalu
+   * dilaporkan sekaligus — satu NIB yang gagal tidak boleh menyembunyikan
+   * bahwa empat dokumen lain sudah lolos.
+   */
+  const runBulkApprove = async () => {
+    setConfirmBulk(false);
+    setBulkRunning(true);
+    const failed: string[] = [];
+    let ok = 0;
+    for (const doc of pendingRequired) {
+      try {
+        await reviewOne(doc.id, 'APPROVED');
+        ok += 1;
+      } catch {
+        failed.push(docLabel(doc.doc_type));
+      }
+    }
+    setBulkRunning(false);
+    refresh();
+    if (failed.length === 0) {
+      toast.success(`${ok} dokumen wajib disetujui`);
+    } else {
+      toast.error(`${ok} disetujui, ${failed.length} gagal: ${failed.join(', ')}`);
+    }
+  };
+
+  const lightboxItems: LightboxItem[] = (data ?? []).map((d) => ({
+    id: d.id,
+    label: docLabel(d.doc_type),
+    url: d.file_url,
+    isImage: isImageUrl(d.file_url),
+  }));
 
   if (isLoading) return <CenteredSpinner />;
   if (!data || data.length === 0)
     return (
       <EmptyState
-        title="Belum ada dokumen tambahan"
-        note="KTP & selfie ada di tab Verifikasi. Dokumen lain (SKCK, sertifikat) diunggah mitra dari aplikasi."
+        title="Belum ada dokumen"
+        note="Dokumen wajib (KTP, selfie, dan berkas badan usaha) dibuat saat mitra mengirim pendaftaran. Kosong di sini berarti mitra belum pernah mengajukan."
       />
     );
 
   return (
     <>
       <EntitySection
-        title="Dokumen pendukung"
-        description="Setiap dokumen ditinjau terpisah — menolak satu dokumen tidak membatalkan verifikasi mitra secara keseluruhan."
+        title="Dokumen KYC"
+        description="Termasuk KTP & selfie. Klik gambar untuk melihat ukuran penuh. Setiap dokumen ditinjau terpisah — menolak satu dokumen tidak membatalkan verifikasi mitra secara keseluruhan."
+        actions={
+          pendingRequired.length > 0 ? (
+            <Button size="sm" disabled={bulkRunning} onClick={() => setConfirmBulk(true)}>
+              {bulkRunning
+                ? 'Memproses…'
+                : `Setujui semua dokumen wajib (${pendingRequired.length})`}
+            </Button>
+          ) : undefined
+        }
       >
-        <div className="space-y-2">
-          {data.map((doc) => (
-            <div
-              key={doc.id}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-lg border border-border p-3"
-            >
-              <div className="min-w-0 space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{doc.doc_type}</span>
-                  <Badge variant={DOC_STATUS_VARIANT[doc.status] ?? 'neutral'}>{doc.status}</Badge>
-                </div>
-                <a
-                  href={doc.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {data.map((doc, i) => {
+            const isRequired = requiredTypes.has(doc.doc_type.toUpperCase());
+            const busy = pendingIds.includes(doc.id) || bulkRunning;
+            return (
+              <div
+                key={doc.id}
+                className="flex flex-col overflow-hidden rounded-lg border border-border"
+              >
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(i)}
+                  aria-label={`Lihat ${docLabel(doc.doc_type)} ukuran penuh`}
+                  className="group relative block aspect-[4/3] w-full bg-muted"
                 >
-                  Buka berkas
-                  <ExternalLink className="size-3" />
-                </a>
-                {doc.document_number && (
-                  <p className="text-xs text-muted-foreground">Nomor: {doc.document_number}</p>
-                )}
-                {doc.expires_at && (
-                  <p className="text-xs text-muted-foreground">
-                    Berlaku sampai: {formatDateTime(doc.expires_at)}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Diunggah {formatDateTime(doc.created_at)}
-                  {doc.verified_by && ` · ditinjau ${doc.verified_by}`}
-                </p>
-                {doc.rejection_reason && (
-                  <p className="text-xs text-destructive">Ditolak: {doc.rejection_reason}</p>
-                )}
+                  {isImageUrl(doc.file_url) ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={doc.file_url}
+                      alt={docLabel(doc.doc_type)}
+                      className="size-full object-cover transition-opacity group-hover:opacity-90"
+                    />
+                  ) : (
+                    <span className="flex size-full flex-col items-center justify-center gap-2 text-xs text-muted-foreground">
+                      <FileText className="size-7" />
+                      Berkas PDF
+                    </span>
+                  )}
+                  <span className="absolute right-1.5 top-1.5 rounded bg-black/60 p-1 text-white">
+                    <Maximize2 className="size-3.5" />
+                  </span>
+                </button>
+
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium">{docLabel(doc.doc_type)}</span>
+                    {isRequired && <Badge variant="neutral">wajib</Badge>}
+                    <Badge variant={DOC_STATUS_VARIANT[doc.status] ?? 'neutral'}>{doc.status}</Badge>
+                  </div>
+
+                  <div className="space-y-0.5 text-xs text-muted-foreground">
+                    {doc.expires_at && <p>Berlaku sampai: {formatDateTime(doc.expires_at)}</p>}
+                    <p>
+                      Diunggah {formatDateTime(doc.created_at)}
+                      {doc.verified_by && ` · ditinjau ${doc.verified_by}`}
+                    </p>
+                  </div>
+                  {doc.rejection_reason && (
+                    <p className="text-xs text-destructive">Ditolak: {doc.rejection_reason}</p>
+                  )}
+
+                  <div className="mt-auto flex items-center gap-2 pt-1">
+                    {doc.status !== 'APPROVED' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => review.mutate({ docId: doc.id, status: 'APPROVED' })}
+                      >
+                        Setujui
+                      </Button>
+                    )}
+                    {doc.status !== 'REJECTED' && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => setRejecting(doc)}
+                      >
+                        Tolak
+                      </Button>
+                    )}
+                    <a
+                      href={doc.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                    >
+                      Asli
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-2">
-                {doc.status !== 'APPROVED' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={review.isPending}
-                    onClick={() => review.mutate({ docId: doc.id, status: 'APPROVED' })}
-                  >
-                    Setujui
-                  </Button>
-                )}
-                {doc.status !== 'REJECTED' && (
-                  <Button variant="destructive" size="sm" onClick={() => setRejecting(doc)}>
-                    Tolak
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </EntitySection>
+
+      {lightboxIndex !== null && (
+        <DocumentLightbox
+          items={lightboxItems}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
+
+      <ConfirmDialog
+        open={confirmBulk}
+        onClose={() => setConfirmBulk(false)}
+        onConfirm={runBulkApprove}
+        title={`Setujui ${pendingRequired.length} dokumen wajib?`}
+        description="Pastikan setiap berkas sudah dilihat. Persetujuan tercatat atas namamu di audit log, satu entri per dokumen."
+        confirmLabel="Setujui semua"
+        loading={bulkRunning}
+      />
 
       <ConfirmDialog
         open={!!rejecting}
@@ -263,7 +409,7 @@ export function DocumentsTab({ partnerId }: { partnerId: string }) {
           rejecting && review.mutate({ docId: rejecting.id, status: 'REJECTED', reason })
         }
         variant="danger"
-        title={`Tolak dokumen ${rejecting?.doc_type ?? ''}?`}
+        title={`Tolak dokumen ${rejecting ? docLabel(rejecting.doc_type) : ''}?`}
         description="Alasan penolakan tersimpan pada dokumen dan di audit log."
         confirmLabel="Tolak dokumen"
         requireReason

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Banknote } from 'lucide-react';
+import { Banknote, AlertTriangle } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
 import type { PaginatedData } from '@/types/api';
 import { getErrorMessage } from '@/types/api';
@@ -18,6 +18,17 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { DataTable, type Column } from '@/components/ui/data-table';
 
 const PER_PAGE = 20;
+
+// Sinyal risiko mismatch nama rekening vs legal_entity_name vendor.
+// H3: Backend sekarang HARD BLOCK penyetujuan mismatch — UI ini memberi
+// tahu admin SEBELUM klik approve supaya tidak terkejut oleh error.
+function vendorBankNameMismatch(w: WithdrawalRow): boolean {
+  if (!w.partner_type?.valid || w.partner_type.partner_type !== 'vendor') return false;
+  const legal = nstr(w.partner_legal_name);
+  const acct = nstr(w.bank_account_name);
+  if (!legal || !acct) return false;
+  return legal.trim().toUpperCase() !== acct.trim().toUpperCase();
+}
 
 export default function WithdrawalsPage() {
   const qc = useQueryClient();
@@ -86,11 +97,17 @@ export default function WithdrawalsPage() {
       cell: (w) => {
         const legal = nstr(w.partner_legal_name);
         const isEntity = !!legal && legal !== w.user_name;
+        const mismatch = vendorBankNameMismatch(w);
         return (
           <div className="flex flex-col">
             <span className="font-medium">{isEntity ? legal : w.user_name}</span>
             {isEntity && (
               <span className="text-xs text-muted-foreground">PIC: {w.user_name}</span>
+            )}
+            {mismatch && (
+              <span className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-destructive">
+                <AlertTriangle className="size-3" /> Nama rekening ≠ badan usaha
+              </span>
             )}
           </div>
         );
@@ -186,6 +203,22 @@ export default function WithdrawalsPage() {
                 </p>
               </div>
             </div>
+            {vendorBankNameMismatch(selected) && (
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <div>
+                  <p className="font-medium text-destructive">
+                    Nama rekening tidak cocok dengan badan usaha
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">
+                    Rekening atas nama <strong>{nstr(selected.bank_account_name)}</strong>,
+                    badan usaha <strong>{nstr(selected.partner_legal_name)}</strong>. Penyetujuan
+                    akan ditolak otomatis oleh sistem (H3) — tolak penarikan ini atau minta mitra
+                    memperbarui rekening via OTP.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-xs text-muted-foreground">Nominal</p>

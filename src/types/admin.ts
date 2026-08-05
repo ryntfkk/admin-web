@@ -220,6 +220,10 @@ export interface WithdrawalRow {
   // Wajib ditampilkan di layar ini: tanpa itu admin menyetujui transfer ke
   // rekening perusahaan sambil layarnya hanya menulis nama PIC (§2.3).
   partner_legal_name: NullString;
+  // 'vendor' | 'individual' | null. Dipakai untuk sinyal risiko mismatch
+  // nama rekening vs legal_entity_name (AUDIT #2 / Fase 2b).
+  // Format sqlc NullPartnerType: { partner_type, valid }.
+  partner_type: { partner_type: 'vendor' | 'individual' | ''; valid: boolean };
   bank_code: NullString;
   bank_account_number: NullString;
   bank_account_name: NullString;

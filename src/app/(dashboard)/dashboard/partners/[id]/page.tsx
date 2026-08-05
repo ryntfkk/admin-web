@@ -625,7 +625,7 @@ function IdentityTab({ partner }: { partner: PartnerDetailRow }) {
   return (
     <EntitySection
       title="KTP & selfie"
-      description="Diunggah saat pendaftaran mitra. Klik gambar untuk membuka ukuran penuh di tab baru."
+      description="Diunggah saat pendaftaran mitra. Tampilan cepat saja — persetujuan/penolakan kedua berkas ini dilakukan di tab Dokumen, yang memuatnya bersama seluruh dokumen wajib lain."
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <DocImage label="Foto KTP" url={nstr(partner.ktp_photo_url)} />
