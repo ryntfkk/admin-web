@@ -21,7 +21,7 @@ export function Field({
   /** Nilai kosong (null/undefined/'') otomatis jadi "-". */
   value: React.ReactNode;
   className?: string;
-  /** Untuk ID, referensi bank, hash — pakai font monospace + boleh patah. */
+  /** Untuk ID, referensi bank, hash . pakai font monospace + boleh patah. */
   mono?: boolean;
 }) {
   const isEmpty = value === null || value === undefined || value === '';

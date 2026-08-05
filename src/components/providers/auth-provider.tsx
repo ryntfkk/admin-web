@@ -6,7 +6,7 @@ import { useAuthStore, AdminUser } from '@/lib/store/authStore';
 import { ADMIN_ROLE } from '@/lib/constants';
 
 /**
- * AuthProvider — runs ONCE on app start to attempt a silent token refresh
+ * AuthProvider . runs ONCE on app start to attempt a silent token refresh
  * using the HttpOnly refresh_token cookie set by the backend.
  *
  * 1. POST /auth/refresh (credentials: include) → new access_token
@@ -37,14 +37,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         const user =
           res.success && res.data
             ? ('user' in (res.data as object)
-                ? (res.data as { user: AdminUser }).user
-                : (res.data as AdminUser))
+              ? (res.data as { user: AdminUser }).user
+              : (res.data as AdminUser))
             : null;
 
         const token = useAuthStore.getState().accessToken;
         // Panel ini KHUSUS admin. Jalur bootstrap ini adalah gerbang sebenarnya
         // (guard dashboard hanya cek isAuthenticated), jadi cek role WAJIB di
-        // sini — kalau tidak, pelanggan/mitra mana pun yang punya cookie refresh
+        // sini . kalau tidak, pelanggan/mitra mana pun yang punya cookie refresh
         // (domain sama) langsung masuk shell admin. Cocok dgn cek di login page.
         const isAdmin =
           !!user &&

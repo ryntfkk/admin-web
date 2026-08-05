@@ -52,7 +52,7 @@ export default function PartnerDetailPage() {
     },
   });
 
-  // V4 §7.2.4: checklist dokumen wajib. Aturannya milik backend — halaman ini
+  // V4 §7.2.4: checklist dokumen wajib. Aturannya milik backend . halaman ini
   // hanya merendernya, supaya tidak melenceng dari gate approve yang sebenarnya.
   const { data: checklist } = useQuery({
     queryKey: ['partner-checklist', partnerId],
@@ -83,7 +83,7 @@ export default function PartnerDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // F3: revoke-verification endpoint — set status ke 'pending' (bukan 'rejected')
+  // F3: revoke-verification endpoint . set status ke 'pending' (bukan 'rejected')
   // supaya mitra bisa edit data verifikasi yang terkunci guard F1 lalu re-submit.
   // Berbeda dari verify{action:'reject'} yang set ke 'rejected' (mitra blocked).
   const revoke = useMutation({
@@ -95,7 +95,7 @@ export default function PartnerDetailPage() {
       if (!res.success) throw new Error(getErrorMessage(res));
     },
     onSuccess: () => {
-      toast.success('Verifikasi dicabut — mitra dapat mengedit data lalu mengajukan ulang');
+      toast.success('Verifikasi dicabut . mitra dapat mengedit data lalu mengajukan ulang');
       setAction(null);
       qc.invalidateQueries({ queryKey: ['partner-detail', partnerId] });
       qc.invalidateQueries({ queryKey: ['partners'] });
@@ -105,7 +105,7 @@ export default function PartnerDetailPage() {
   });
 
   // F4: suspend/unsuspend mitra (pakai endpoint user, mitra = user dengan role partner).
-  // Suspend mencabut sesi aktif langsung — mitra tidak bisa login/menerima pesanan.
+  // Suspend mencabut sesi aktif langsung . mitra tidak bisa login/menerima pesanan.
   const suspend = useMutation({
     mutationFn: async (payload: { duration_hours: number; reason: string }) => {
       const res = await fetchAPI(`/admin/users/${data?.user_id}/suspend`, {
@@ -142,7 +142,7 @@ export default function PartnerDetailPage() {
   const isApproved = status === 'approved';
   const isVendor = data?.partner_type === 'vendor';
   // Tombol Setujui dimatikan bila dokumen wajib belum lengkap. Ini cerminan UI
-  // dari gate backend (A1) — backend tetap penegaknya, ini hanya supaya admin
+  // dari gate backend (A1) . backend tetap penegaknya, ini hanya supaya admin
   // tidak menabrak 409 tanpa tahu sebabnya. Saat checklist belum termuat,
   // tombol dibiarkan aktif: backend yang akan menolak bila memang kurang.
   const canApprove = checklist ? checklist.can_approve : true;
@@ -166,30 +166,30 @@ export default function PartnerDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        { id: 'profil', label: 'Profil', content: <ProfileTab partner={data} checklist={checklist} /> },
-        { id: 'identitas', label: 'KTP & Selfie', content: <IdentityTab partner={data} /> },
-        { id: 'dokumen', label: 'Dokumen', content: <DocumentsTab partnerId={partnerId} /> },
-        { id: 'layanan', label: 'Layanan', content: <ServicesTab partnerId={partnerId} /> },
-        { id: 'portfolio', label: 'Portfolio', content: <PortfolioTab partnerId={partnerId} /> },
-        { id: 'jadwal', label: 'Jam Operasional', content: <WorkingHoursTab partnerId={partnerId} /> },
-        // §11.1 — halaman ini akhirnya jadi workspace operasional, bukan hanya
-        // layar KYC: aktivitas mitra bisa dibaca tanpa berpindah halaman.
-        { id: 'pesanan', label: 'Pesanan', content: <PartnerOrdersTab partnerId={partnerId} /> },
-        { id: 'ulasan', label: 'Ulasan', content: <PartnerReviewsTab partnerId={partnerId} /> },
-        {
-          id: 'pencairan',
-          label: 'Pencairan',
-          content: <PartnerWithdrawalsTab userId={data.user_id} />,
-        },
-        { id: 'sengketa', label: 'Sengketa', content: <PartnerDisputesTab partnerId={partnerId} /> },
-        {
-          id: 'performa',
-          label: 'Performa',
-          content: <PartnerPerformanceTab partnerId={partnerId} />,
-        },
-        { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
-        { id: 'aksi', label: 'Riwayat Aksi', content: <ActionLogsTab partnerId={partnerId} /> },
-      ]
+      { id: 'profil', label: 'Profil', content: <ProfileTab partner={data} checklist={checklist} /> },
+      { id: 'identitas', label: 'KTP & Selfie', content: <IdentityTab partner={data} /> },
+      { id: 'dokumen', label: 'Dokumen', content: <DocumentsTab partnerId={partnerId} /> },
+      { id: 'layanan', label: 'Layanan', content: <ServicesTab partnerId={partnerId} /> },
+      { id: 'portfolio', label: 'Portfolio', content: <PortfolioTab partnerId={partnerId} /> },
+      { id: 'jadwal', label: 'Jam Operasional', content: <WorkingHoursTab partnerId={partnerId} /> },
+      // §11.1 . halaman ini akhirnya jadi workspace operasional, bukan hanya
+      // layar KYC: aktivitas mitra bisa dibaca tanpa berpindah halaman.
+      { id: 'pesanan', label: 'Pesanan', content: <PartnerOrdersTab partnerId={partnerId} /> },
+      { id: 'ulasan', label: 'Ulasan', content: <PartnerReviewsTab partnerId={partnerId} /> },
+      {
+        id: 'pencairan',
+        label: 'Pencairan',
+        content: <PartnerWithdrawalsTab userId={data.user_id} />,
+      },
+      { id: 'sengketa', label: 'Sengketa', content: <PartnerDisputesTab partnerId={partnerId} /> },
+      {
+        id: 'performa',
+        label: 'Performa',
+        content: <PartnerPerformanceTab partnerId={partnerId} />,
+      },
+      { id: 'strike', label: 'Strike', content: <StrikesTab partnerId={partnerId} /> },
+      { id: 'aksi', label: 'Riwayat Aksi', content: <ActionLogsTab partnerId={partnerId} /> },
+    ]
     : [];
 
   return (
@@ -201,15 +201,15 @@ export default function PartnerDetailPage() {
         error={error}
         /* V4 §7.2.2: judul = nama yang DILIHAT PELANGGAN. Untuk vendor itu nama
            merek; nama legal & nama PIC muncul di subtitle. Admin yang memverifikasi
-           harus melihat ketiganya bersamaan — tanpa itu ia menyetujui "PT Bersih
+           harus melihat ketiganya bersamaan . tanpa itu ia menyetujui "PT Bersih
            Jaya" sambil hanya membaca "Budi Santoso". */
-        title={(data && (nstr(data.display_name) || data.name)) ?? '—'}
+        title={(data && (nstr(data.display_name) || data.name)) ?? '.'}
         subtitle={
           data && (
             <span>
               {isVendor && (
                 <>
-                  <strong>{nstr(data.legal_entity_name) || '—'}</strong>
+                  <strong>{nstr(data.legal_entity_name) || '.'}</strong>
                   {nstr(data.entity_form) ? ` · ${nstr(data.entity_form)}` : ''} · PIC:{' '}
                   {nstr(data.pic_name) || data.name}
                   {' · '}
@@ -258,7 +258,7 @@ export default function PartnerDetailPage() {
               </Button>
               {/* Keputusan verifikasi tidak lagi satu arah: backend memang tidak
                   mengunci status, dulu hanya UI yang menyembunyikan tombolnya
-                  begitu keputusan diambil — sehingga salah klik tak bisa dikoreksi. */}
+                  begitu keputusan diambil . sehingga salah klik tak bisa dikoreksi. */}
               {!isApproved && (
                 <Button
                   size="sm"
@@ -298,7 +298,7 @@ export default function PartnerDetailPage() {
                   Tolak
                 </Button>
               )}
-              {/* F4: Suspend/Unsuspend — pakai endpoint user (mitra = user). */}
+              {/* F4: Suspend/Unsuspend . pakai endpoint user (mitra = user). */}
               <Button variant="destructive" size="sm" onClick={() => setAction('suspend')}>
                 <Ban className="size-4" />
                 Suspend
@@ -358,7 +358,7 @@ export default function PartnerDetailPage() {
         onConfirm={(reason) => remove.mutate(reason)}
         variant="danger"
         title="Hapus mitra ini?"
-        description="Mitra hilang dari pencarian dan tidak bisa menerima pesanan baru (soft delete). Order yang sedang berjalan sengaja tidak disentuh — pembatalannya punya alur uang tersendiri."
+        description="Mitra hilang dari pencarian dan tidak bisa menerima pesanan baru (soft delete). Order yang sedang berjalan sengaja tidak disentuh . pembatalannya punya alur uang tersendiri."
         confirmLabel="Hapus mitra"
         requireReason
         confirmPhrase={data?.name}
@@ -381,7 +381,7 @@ export default function PartnerDetailPage() {
         onConfirm={(reason) => verify.mutate({ action: 'reject', reason })}
         variant="danger"
         title="Tolak pendaftaran mitra?"
-        description="Alasan dikirim ke mitra dan tercatat di audit log. Mitra berstatus 'rejected' tidak bisa re-submit langsung — perlu admin tinjau ulang."
+        description="Alasan dikirim ke mitra dan tercatat di audit log. Mitra berstatus 'rejected' tidak bisa re-submit langsung . perlu admin tinjau ulang."
         confirmLabel="Tolak"
         requireReason
         reasonLabel="Alasan"
@@ -389,7 +389,7 @@ export default function PartnerDetailPage() {
         loading={verify.isPending}
       />
 
-      {/* F3: revoke-verification — set status ke 'pending' (bukan 'rejected').
+      {/* F3: revoke-verification . set status ke 'pending' (bukan 'rejected').
           Mitra lalu bisa edit data verifikasi yang terkunci guard F1
           (basecamp, rekening, dokumen APPROVED) lalu ajukan verifikasi ulang. */}
       <ConfirmDialog
@@ -403,13 +403,13 @@ export default function PartnerDetailPage() {
         requireReason
         reasonLabel="Alasan"
         reasonPlaceholder="Jelaskan alasan yang akan dikirim ke mitra…"
-        // Mencabut mitra yang sudah aktif memutus pendapatannya — minta admin
+        // Mencabut mitra yang sudah aktif memutus pendapatannya . minta admin
         // mengetik ulang namanya supaya tidak terjadi karena salah klik.
         confirmPhrase={data?.name}
         loading={revoke.isPending}
       />
 
-      {/* F4: Suspend mitra — duration 0 = permanen sampai unsuspend. */}
+      {/* F4: Suspend mitra . duration 0 = permanen sampai unsuspend. */}
       <ConfirmDialog
         open={action === 'suspend'}
         onClose={() => setAction(null)}
@@ -451,7 +451,7 @@ function ProfileTab({
   const isVendor = partner.partner_type === 'vendor';
 
   // §7.2.5: nama rekening vs nama legal. Ejaan rekening bank sering berbeda
-  // ("PT" disingkat, nama dipotong), jadi ini PERINGATAN saja — bukan penolakan.
+  // ("PT" disingkat, nama dipotong), jadi ini PERINGATAN saja . bukan penolakan.
   // Keputusan tetap milik admin yang memegang dokumennya.
   const expectedName = isVendor ? nstr(partner.legal_entity_name) : partner.name;
   const bankName = nstr(partner.bank_account_name);
@@ -463,13 +463,13 @@ function ProfileTab({
     <div className="space-y-4">
       {checklist && !checklist.can_approve && (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-          <p className="font-medium">Belum bisa disetujui — dokumen wajib belum lengkap</p>
+          <p className="font-medium">Belum bisa disetujui . dokumen wajib belum lengkap</p>
           <ul className="mt-1 list-inside list-disc">
             {checklist.items
               .filter((i) => !i.satisfied)
               .map((i) => (
                 <li key={i.doc_type}>
-                  {i.label} —{' '}
+                  {i.label} .{' '}
                   {i.status === 'MISSING' ? 'belum diunggah' : `status ${i.status}`}
                 </li>
               ))}
@@ -483,7 +483,7 @@ function ProfileTab({
       {isVendor && (
         <EntitySection
           title="Data Badan Usaha"
-          description="Identitas hukum mitra. Hanya bisa diubah lewat tombol Edit identitas — mitra tidak dapat mengubahnya sendiri."
+          description="Identitas hukum mitra. Hanya bisa diubah lewat tombol Edit identitas . mitra tidak dapat mengubahnya sendiri."
         >
           <FieldGrid columns={3}>
             <Field label="Nama tampil (dilihat pelanggan)" value={nstr(partner.display_name)} />
@@ -563,13 +563,13 @@ function ProfileTab({
           <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
             Nama rekening <strong>{bankName}</strong> tidak mirip dengan{' '}
             {isVendor ? 'nama badan hukum' : 'nama mitra'} <strong>{expectedName}</strong>.
-            Ejaan rekening bank memang sering berbeda — periksa dokumennya sebelum
+            Ejaan rekening bank memang sering berbeda . periksa dokumennya sebelum
             memutuskan, jangan langsung menolak.
           </p>
         )}
       </EntitySection>
 
-      {/* F4: Basecamp & area layanan — data verifikasi yang terkunci guard F1.
+      {/* F4: Basecamp & area layanan . data verifikasi yang terkunci guard F1.
           Admin butuh lihat ini sebelum approve/revoke. */}
       <EntitySection
         title="Basecamp & Area Layanan"
@@ -625,7 +625,7 @@ function IdentityTab({ partner }: { partner: PartnerDetailRow }) {
   return (
     <EntitySection
       title="KTP & selfie"
-      description="Diunggah saat pendaftaran mitra. Tampilan cepat saja — persetujuan/penolakan kedua berkas ini dilakukan di tab Dokumen, yang memuatnya bersama seluruh dokumen wajib lain."
+      description="Diunggah saat pendaftaran mitra. Tampilan cepat saja . persetujuan/penolakan kedua berkas ini dilakukan di tab Dokumen, yang memuatnya bersama seluruh dokumen wajib lain."
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <DocImage label="Foto KTP" url={nstr(partner.ktp_photo_url)} />
@@ -662,7 +662,7 @@ function DocImage({ label, url }: { label: string; url: string | null }) {
 }
 
 // V4 §7.2.7: satu-satunya jalur mengubah tipe mitra & identitas badan usaha.
-// Mengubah tipe MENURUNKAN status verifikasi ke pending — peringatannya
+// Mengubah tipe MENURUNKAN status verifikasi ke pending . peringatannya
 // ditampilkan supaya admin tidak melakukannya tanpa sadar.
 function EditPartnerIdentityDialog({
   partner,
@@ -763,7 +763,7 @@ function EditPartnerIdentityDialog({
                 value={form.entity_form}
                 onChange={(e) => set('entity_form', e.target.value)}
               >
-                <option value="">— pilih —</option>
+                <option value="">. pilih .</option>
                 {ENTITY_FORMS.map((f) => (
                   <option key={f} value={f}>
                     {f}
@@ -777,7 +777,7 @@ function EditPartnerIdentityDialog({
                 id="ident-npwp"
                 value={form.npwp}
                 onChange={(e) => set('npwp', e.target.value)}
-                placeholder="Tersimpan terenkripsi — nilai lama tidak ditampilkan"
+                placeholder="Tersimpan terenkripsi . nilai lama tidak ditampilkan"
               />
             </div>
             <div className="flex flex-col gap-1.5">

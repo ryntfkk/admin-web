@@ -34,7 +34,7 @@ export default function Sidebar() {
         <Link
           href="/dashboard"
           className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
-          aria-label="POSKO24 Admin — ke dashboard"
+          aria-label="POSKO24 Admin . ke dashboard"
         >
           <ShieldCheck className="size-4.5" />
         </Link>

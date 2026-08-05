@@ -22,7 +22,7 @@ import { CenteredSpinner, EmptyState } from '@/components/ui/feedback';
  * Tab aktivitas mitra (§11.1): Pesanan, Ulasan, Pencairan.
  *
  * Ketiganya memakai endpoint GLOBAL yang sudah ada dengan filter `partner_id`
- * / `user_id`, BUKAN service backend baru per tab — §11.1 menyebut itu secara
+ * / `user_id`, BUKAN service backend baru per tab . §11.1 menyebut itu secara
  * eksplisit. Konsekuensinya: kalau daftar global menambah kolom, tab ini ikut
  * mendapatkannya tanpa pekerjaan tambahan.
  */
@@ -65,7 +65,7 @@ export function PartnerOrdersTab({ partnerId }: { partnerId: string }) {
   if (error) return <EmptyState title="Gagal memuat pesanan" note={(error as Error).message} />;
   if (!data || data.length === 0) return <EmptyState title="Mitra ini belum punya pesanan" />;
 
-  // Ringkasan dihitung dari baris yang termuat, dan itu DIKATAKAN di UI —
+  // Ringkasan dihitung dari baris yang termuat, dan itu DIKATAKAN di UI .
   // angka yang tampak final padahal cuma 50 baris terakhir lebih berbahaya
   // daripada tidak ada angka sama sekali.
   const completed = data.filter((o) => o.status === 'COMPLETED').length;
@@ -139,7 +139,7 @@ export function PartnerReviewsTab({ partnerId }: { partnerId: string }) {
                 <span className="font-medium">{'★'.repeat(r.rating)}</span>
                 <span className="text-xs text-muted-foreground">{r.rating}/5</span>
                 {r.is_hidden && <Badge variant="danger">Disembunyikan</Badge>}
-                {/* Ulasan yang tidak dibalas dalam 7 hari kehilangan haknya —
+                {/* Ulasan yang tidak dibalas dalam 7 hari kehilangan haknya .
                     penandanya membantu admin melihat pola mitra yang diam. */}
                 {!r.partner_response?.Valid && <Badge variant="neutral">Belum dibalas</Badge>}
               </div>
@@ -300,7 +300,7 @@ export function PartnerDisputesTab({ partnerId }: { partnerId: string }) {
                 <span className="font-medium">{d.dispute_type}</span>
                 <Badge variant={DISPUTE_STATUS_VARIANT[d.status] ?? 'neutral'}>{d.status}</Badge>
                 {d.has_evidence && <Badge variant="neutral">Ada bukti</Badge>}
-                {/* Sengketa tanpa tanggapan mitra adalah sinyal tersendiri —
+                {/* Sengketa tanpa tanggapan mitra adalah sinyal tersendiri .
                     bukan soal siapa benar, tapi mitra yang tidak menjawab. */}
                 {!d.has_response && <Badge variant="warning">Belum ditanggapi</Badge>}
               </div>

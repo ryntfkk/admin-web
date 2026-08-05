@@ -20,7 +20,7 @@ export interface ThreadMessage {
  * Panel percakapan admin↔pengguna.
  *
  * Ruang sengketa dan thread laporan sebelumnya punya implementasi terpisah yang
- * hampir identik — termasuk daftar balasan cepat yang disalin dua kali. Ini
+ * hampir identik . termasuk daftar balasan cepat yang disalin dua kali. Ini
  * satu-satunya tampilan thread; masing-masing halaman cukup mengoper data &
  * fungsi kirimnya.
  */
@@ -51,7 +51,7 @@ export default function ThreadPanel({
   const listRef = React.useRef<HTMLDivElement>(null);
   const lastId = messages?.[messages.length - 1]?.id;
 
-  // Gulir ke pesan terbaru saat ada pesan baru masuk — percakapan panjang
+  // Gulir ke pesan terbaru saat ada pesan baru masuk . percakapan panjang
   // kalau tidak akan tetap menampilkan pesan paling awal.
   React.useEffect(() => {
     const el = listRef.current;
@@ -133,7 +133,7 @@ export default function ThreadPanel({
               aria-label={placeholder}
               className="min-h-0 flex-1 resize-none"
               onKeyDown={(e) => {
-                // Enter mengirim, Shift+Enter baris baru — kebiasaan aplikasi chat.
+                // Enter mengirim, Shift+Enter baris baru . kebiasaan aplikasi chat.
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   submit();
@@ -155,7 +155,7 @@ export default function ThreadPanel({
   );
 }
 
-/** Balasan cepat CS — dipakai bersama oleh sengketa dan laporan. */
+/** Balasan cepat CS . dipakai bersama oleh sengketa dan laporan. */
 export const CANNED_REPLIES = [
   'Halo, terima kasih. Bisa dijelaskan kronologinya lebih detail?',
   'Mohon lampirkan bukti (foto / tangkapan layar) agar bisa kami tindak lanjuti.',

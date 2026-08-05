@@ -17,8 +17,8 @@ export default function MobileNav() {
   const mounted = useIsMounted();
   const pathname = usePathname();
 
-  // Drawer diikat ke rute tempat ia dibuka: begitu pathname berubah — entah
-  // karena menu diklik atau tombol Kembali browser — `open` otomatis jadi false
+  // Drawer diikat ke rute tempat ia dibuka: begitu pathname berubah . entah
+  // karena menu diklik atau tombol Kembali browser . `open` otomatis jadi false
   // tanpa perlu efek yang memanggil setState.
   const [openedAt, setOpenedAt] = React.useState<string | null>(null);
   const open = openedAt !== null && openedAt === pathname;

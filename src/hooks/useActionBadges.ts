@@ -9,7 +9,7 @@ import type { DashboardStats } from '@/types/api';
  *
  * Memakai queryKey yang SAMA dengan halaman dashboard sehingga react-query
  * men-dedupe permintaannya; refetch berkala membuat badge terasa seperti
- * notifikasi live — admin tahu ada laporan/sengketa/withdrawal baru tanpa
+ * notifikasi live . admin tahu ada laporan/sengketa/withdrawal baru tanpa
  * memuat ulang halaman.
  */
 export function useActionBadges(): Record<string, number> {

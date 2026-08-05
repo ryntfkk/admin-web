@@ -121,30 +121,30 @@ export default function UserDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        {
-          id: 'profil',
-          label: 'Profil',
-          content: <ProfileTab user={data} isDeleted={isDeleted} />,
-        },
-        {
-          id: 'alamat',
-          label: 'Alamat',
-          content: <AddressTab userId={userId} canEdit={canEdit} />,
-        },
-        { id: 'login', label: 'Riwayat Login', content: <LoginHistoryTab userId={userId} /> },
-        { id: 'order', label: 'Order', content: <UserOrdersTab userId={userId} /> },
-        { id: 'transaksi', label: 'Transaksi', content: <UserTransactionsTab userId={userId} /> },
-        { id: 'chat', label: 'Chat', content: <UserChatsTab userId={userId} /> },
-        ...(isDeleted
-          ? [
-              {
-                id: 'arsip',
-                label: 'Arsip Identitas',
-                content: <DeletionArchiveTab userId={userId} />,
-              },
-            ]
-          : []),
-      ]
+      {
+        id: 'profil',
+        label: 'Profil',
+        content: <ProfileTab user={data} isDeleted={isDeleted} />,
+      },
+      {
+        id: 'alamat',
+        label: 'Alamat',
+        content: <AddressTab userId={userId} canEdit={canEdit} />,
+      },
+      { id: 'login', label: 'Riwayat Login', content: <LoginHistoryTab userId={userId} /> },
+      { id: 'order', label: 'Order', content: <UserOrdersTab userId={userId} /> },
+      { id: 'transaksi', label: 'Transaksi', content: <UserTransactionsTab userId={userId} /> },
+      { id: 'chat', label: 'Chat', content: <UserChatsTab userId={userId} /> },
+      ...(isDeleted
+        ? [
+          {
+            id: 'arsip',
+            label: 'Arsip Identitas',
+            content: <DeletionArchiveTab userId={userId} />,
+          },
+        ]
+        : []),
+    ]
     : [];
 
   return (
@@ -157,7 +157,7 @@ export default function UserDetailPage() {
         title={
           <span className="flex items-center gap-3">
             <Avatar name={data?.name} url={data ? nstr(data.avatar_url) : null} />
-            {data?.name ?? '—'}
+            {data?.name ?? '.'}
           </span>
         }
         subtitle={
@@ -365,7 +365,7 @@ function AddressTab({ userId, canEdit }: { userId: string; canEdit: boolean }) {
     queryKey: ['user-addresses', userId],
     queryFn: async () => {
       const res = await fetchAPI<UserAddressRow[]>(`/admin/users/${userId}/addresses`);
-      // Jangan tolak data null — backend bisa mengirim null saat kosong. Tanpa
+      // Jangan tolak data null . backend bisa mengirim null saat kosong. Tanpa
       // `?? []` query masuk state error dan tab tersangkut "Memuat alamat…".
       if (!res.success) throw new Error(getErrorMessage(res));
       return res.data ?? [];
@@ -450,7 +450,7 @@ function AddressTab({ userId, canEdit }: { userId: string; canEdit: boolean }) {
         title="Hapus alamat ini?"
         description={
           <>
-            <span className="font-medium text-foreground">{toDelete?.label || 'Alamat'}</span> —{' '}
+            <span className="font-medium text-foreground">{toDelete?.label || 'Alamat'}</span> .{' '}
             {toDelete?.address}. Alamat lama diarsipkan ke audit log sebelum dihapus.
           </>
         }

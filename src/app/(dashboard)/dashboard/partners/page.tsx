@@ -103,7 +103,7 @@ export default function PartnersPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Mitra</h1>
         <p className="text-sm text-muted-foreground">
-          Verifikasi pendaftaran & direktori semua mitra — klik baris untuk meninjau dokumen KYC.
+          Verifikasi pendaftaran & direktori semua mitra . klik baris untuk meninjau dokumen KYC.
         </p>
       </div>
 

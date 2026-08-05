@@ -17,7 +17,7 @@ function subscribe(onChange: () => void) {
 
 /**
  * Preferensi UI yang bertahan di localStorage (kepadatan tabel, sidebar
- * diciutkan, tema) — sinkron antar komponen DAN antar tab.
+ * diciutkan, tema) . sinkron antar komponen DAN antar tab.
  *
  * Memakai useSyncExternalStore agar render di server memakai `fallback` lalu
  * React sendiri yang menyelaraskan ke nilai tersimpan setelah hidrasi. Membaca

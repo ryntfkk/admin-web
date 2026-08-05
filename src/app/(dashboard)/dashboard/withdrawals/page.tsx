@@ -20,7 +20,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 const PER_PAGE = 20;
 
 // Sinyal risiko mismatch nama rekening vs legal_entity_name vendor.
-// H3: Backend sekarang HARD BLOCK penyetujuan mismatch — UI ini memberi
+// H3: Backend sekarang HARD BLOCK penyetujuan mismatch . UI ini memberi
 // tahu admin SEBELUM klik approve supaya tidak terkejut oleh error.
 function vendorBankNameMismatch(w: WithdrawalRow): boolean {
   if (!w.partner_type?.valid || w.partner_type.partner_type !== 'vendor') return false;
@@ -91,7 +91,7 @@ export default function WithdrawalsPage() {
     {
       key: 'user',
       header: 'Penerima',
-      // Untuk mitra badan usaha, user_name adalah nama PIC — bukan penerima
+      // Untuk mitra badan usaha, user_name adalah nama PIC . bukan penerima
       // dananya. Nama badan hukum ditampilkan di depan supaya admin tidak
       // menyetujui transfer ke rekening perusahaan sambil membaca nama orang.
       cell: (w) => {
@@ -157,7 +157,7 @@ export default function WithdrawalsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Withdrawal</h1>
         <p className="text-sm text-muted-foreground">
-          Penarikan dana yang menunggu diproses — klik baris untuk memverifikasi rekening dan
+          Penarikan dana yang menunggu diproses . klik baris untuk memverifikasi rekening dan
           menandai transfer selesai.
         </p>
       </div>
@@ -187,7 +187,7 @@ export default function WithdrawalsPage() {
               <div>
                 <p className="font-medium">
                   {nstr(selected.partner_legal_name) &&
-                  nstr(selected.partner_legal_name) !== selected.user_name
+                    nstr(selected.partner_legal_name) !== selected.user_name
                     ? nstr(selected.partner_legal_name)
                     : selected.user_name}
                 </p>
@@ -213,7 +213,7 @@ export default function WithdrawalsPage() {
                   <p className="mt-0.5 text-muted-foreground">
                     Rekening atas nama <strong>{nstr(selected.bank_account_name)}</strong>,
                     badan usaha <strong>{nstr(selected.partner_legal_name)}</strong>. Penyetujuan
-                    akan ditolak otomatis oleh sistem (H3) — tolak penarikan ini atau minta mitra
+                    akan ditolak otomatis oleh sistem (H3) . tolak penarikan ini atau minta mitra
                     memperbarui rekening via OTP.
                   </p>
                 </div>
@@ -255,7 +255,7 @@ export default function WithdrawalsPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  placeholder="Alasan penolakan — tercatat & saldo dikembalikan ke pengguna"
+                  placeholder="Alasan penolakan . tercatat & saldo dikembalikan ke pengguna"
                 />
               </div>
             </div>
@@ -288,7 +288,7 @@ export default function WithdrawalsPage() {
       )}
 
       {/* Menandai penarikan selesai berarti uang SUDAH ditransfer di luar sistem
-          dan tidak bisa ditarik kembali — karena itu butuh ketik-ulang, bukan
+          dan tidak bisa ditarik kembali . karena itu butuh ketik-ulang, bukan
           sekadar window.confirm() yang mudah ditekan tanpa dibaca. */}
       <ConfirmDialog
         open={confirming === 'approve'}
@@ -304,7 +304,7 @@ export default function WithdrawalsPage() {
                 {formatIDR(selected.amount - selected.admin_fee)}
               </strong>{' '}
               ke <strong className="text-foreground">{selected.user_name}</strong> sudah dilakukan.
-              Pastikan bukti transfer benar — aksi ini tidak dapat dibatalkan.
+              Pastikan bukti transfer benar . aksi ini tidak dapat dibatalkan.
             </>
           )
         }

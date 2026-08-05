@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <Topbar />
         <main className="flex-1 overflow-y-auto bg-muted/30 p-5">
           {/* Satu halaman yang gagal render tidak boleh menjatuhkan seluruh shell
-              admin. `key` per-rute mereset boundary saat pindah halaman —
+              admin. `key` per-rute mereset boundary saat pindah halaman .
               tanpa itu, pesan galat menempel di halaman berikutnya. */}
           <ErrorBoundary key={pathname} label="Halaman ini">
             {children}

@@ -17,7 +17,7 @@ import { EntitySection } from '@/components/ui/entity-page';
 import { CenteredSpinner } from '@/components/ui/feedback';
 
 // Token yang boleh dipakai di jawaban. Harus sama dengan
-// web/src/lib/faq-tokens.ts — token yang tidak dikenal dibiarkan apa adanya
+// web/src/lib/faq-tokens.ts . token yang tidak dikenal dibiarkan apa adanya
 // saat render, jadi salah ketik akan terlihat sebagai "{{typo}}" di halaman,
 // bukan hilang diam-diam.
 const TOKENS: { token: string; label: string }[] = [
@@ -86,7 +86,7 @@ export default function FaqsPage() {
         <p className="text-sm text-muted-foreground">
           Ditampilkan di halaman Bantuan pelanggan dan mitra. Perubahan langsung
           berlaku tanpa deploy. Untuk menyebut tarif atau batas,{' '}
-          <strong>pakai token</strong> — jangan ketik angkanya.
+          <strong>pakai token</strong> . jangan ketik angkanya.
         </p>
       </div>
 
@@ -262,7 +262,7 @@ function FaqModal({
           />
           <div className="rounded-lg border bg-muted/40 p-3">
             <p className="mb-2 text-xs font-medium">
-              Sisipkan token — angkanya ikut berubah otomatis saat setelan diubah:
+              Sisipkan token . angkanya ikut berubah otomatis saat setelan diubah:
             </p>
             <div className="flex flex-wrap gap-1.5">
               {TOKENS.map((t) => (

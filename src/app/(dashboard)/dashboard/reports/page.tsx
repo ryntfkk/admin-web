@@ -32,7 +32,7 @@ export default function ReportsPage() {
   const [targetType, setTargetType] = useState('');
   const [searchInput, setSearchInput] = useState('');
   // Pencarian dijalankan SERVER (AdminListReports punya param `search`), jadi
-  // hasilnya mencakup seluruh laporan — bukan hanya halaman yang kebetulan termuat.
+  // hasilnya mencakup seluruh laporan . bukan hanya halaman yang kebetulan termuat.
   const search = useDebouncedValue(searchInput.trim(), 300);
   const [page, setPage] = useState(1);
 
@@ -109,7 +109,7 @@ export default function ReportsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Laporan</h1>
         <p className="text-sm text-muted-foreground">
-          Laporan & tiket bantuan dari pengguna — klik baris untuk membaca bukti dan membalas.
+          Laporan & tiket bantuan dari pengguna . klik baris untuk membaca bukti dan membalas.
         </p>
       </div>
 

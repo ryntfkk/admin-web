@@ -81,7 +81,7 @@ export default function TransactionsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Transaksi</h1>
         <p className="text-sm text-muted-foreground">
-          Semua pesanan di platform — klik baris untuk rincian biaya, riwayat status, dan kontrol
+          Semua pesanan di platform . klik baris untuk rincian biaya, riwayat status, dan kontrol
           admin.
         </p>
       </div>

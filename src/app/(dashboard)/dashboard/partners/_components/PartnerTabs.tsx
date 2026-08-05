@@ -93,7 +93,7 @@ function WorkingHoursForm({
   return (
     <EntitySection
       title="Jam operasional"
-      description="Mitra tanpa jadwal sama sekali tidak akan pernah bisa menerima pesanan — validasi jadwal di backend bersifat fail-closed."
+      description="Mitra tanpa jadwal sama sekali tidak akan pernah bisa menerima pesanan . validasi jadwal di backend bersifat fail-closed."
     >
       <div className="space-y-2">
         {DAYS.map(({ key, label }) => {
@@ -238,7 +238,7 @@ export function DocumentsTab({ partnerId }: { partnerId: string }) {
    *
    * Berurutan, bukan `Promise.all`: tiap panggilan menulis audit log dan
    * menyentuh baris mitra yang sama. Kegagalan per dokumen dikumpulkan lalu
-   * dilaporkan sekaligus — satu NIB yang gagal tidak boleh menyembunyikan
+   * dilaporkan sekaligus . satu NIB yang gagal tidak boleh menyembunyikan
    * bahwa empat dokumen lain sudah lolos.
    */
   const runBulkApprove = async () => {
@@ -283,7 +283,7 @@ export function DocumentsTab({ partnerId }: { partnerId: string }) {
     <>
       <EntitySection
         title="Dokumen KYC"
-        description="Termasuk KTP & selfie. Klik gambar untuk melihat ukuran penuh. Setiap dokumen ditinjau terpisah — menolak satu dokumen tidak membatalkan verifikasi mitra secara keseluruhan."
+        description="Termasuk KTP & selfie. Klik gambar untuk melihat ukuran penuh. Setiap dokumen ditinjau terpisah . menolak satu dokumen tidak membatalkan verifikasi mitra secara keseluruhan."
         actions={
           pendingRequired.length > 0 ? (
             <Button size="sm" disabled={bulkRunning} onClick={() => setConfirmBulk(true)}>

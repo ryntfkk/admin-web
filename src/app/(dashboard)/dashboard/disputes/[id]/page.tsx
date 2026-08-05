@@ -74,24 +74,24 @@ export default function DisputeDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab dispute={data} /> },
-        { id: 'ruang', label: 'Ruang Sengketa', content: <DisputeThread disputeId={disputeId} /> },
-        {
-          id: 'resolusi',
-          label: 'Resolusi',
-          content: (
-            <ResolutionTab
-              dispute={data}
-              disputeId={disputeId}
-              onResolved={() => {
-                refetch();
-                qc.invalidateQueries({ queryKey: ['disputes'] });
-                qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
-              }}
-            />
-          ),
-        },
-      ]
+      { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab dispute={data} /> },
+      { id: 'ruang', label: 'Ruang Sengketa', content: <DisputeThread disputeId={disputeId} /> },
+      {
+        id: 'resolusi',
+        label: 'Resolusi',
+        content: (
+          <ResolutionTab
+            dispute={data}
+            disputeId={disputeId}
+            onResolved={() => {
+              refetch();
+              qc.invalidateQueries({ queryKey: ['disputes'] });
+              qc.invalidateQueries({ queryKey: ['dashboard-stats'] });
+            }}
+          />
+        ),
+      },
+    ]
     : [];
 
   return (
@@ -100,7 +100,7 @@ export default function DisputeDetailPage() {
       backLabel="Semua sengketa"
       isLoading={isLoading}
       error={error}
-      title={data ? `Sengketa ${data.order_number}` : '—'}
+      title={data ? `Sengketa ${data.order_number}` : '.'}
       subtitle={
         data && (
           <span>
@@ -168,7 +168,7 @@ function SummaryTab({ dispute }: { dispute: DisputeDetailRow }) {
                 >
                   {dispute.partner_name}
                 </Link>
-                {/* Nama legal hanya ditampilkan bila BERBEDA dari nama tampil —
+                {/* Nama legal hanya ditampilkan bila BERBEDA dari nama tampil .
                     untuk mitra perorangan keduanya sama dan barisnya cuma bising. */}
                 {dispute.partner_legal_name &&
                   dispute.partner_legal_name !== dispute.partner_name && (
@@ -185,7 +185,7 @@ function SummaryTab({ dispute }: { dispute: DisputeDetailRow }) {
           />
         </FieldGrid>
         <p className="mt-3 text-xs text-muted-foreground">
-          &ldquo;Dana terkumpul&rdquo; adalah plafon gabungan refund + payout — backend menolak
+          &ldquo;Dana terkumpul&rdquo; adalah plafon gabungan refund + payout . backend menolak
           resolusi yang melebihinya.
         </p>
       </EntitySection>
@@ -289,7 +289,7 @@ function ResolutionTab({
 
   const totalCollected =
     typeof dispute.total_collected === 'number' ? dispute.total_collected : null;
-  // Resolusi hanya sah selama order masih DISPUTED — mencerminkan guard backend.
+  // Resolusi hanya sah selama order masih DISPUTED . mencerminkan guard backend.
   const orderNotDisputed =
     typeof dispute.order_status === 'string' &&
     dispute.order_status !== '' &&
@@ -329,7 +329,7 @@ function ResolutionTab({
     onError: (e: Error) => {
       toast.error(e.message);
       setConfirming(false);
-      // Konflik (order berubah status / sengketa diambil admin lain) — muat ulang
+      // Konflik (order berubah status / sengketa diambil admin lain) . muat ulang
       // agar UI langsung menampilkan kondisi terbaru.
       onResolved();
     },

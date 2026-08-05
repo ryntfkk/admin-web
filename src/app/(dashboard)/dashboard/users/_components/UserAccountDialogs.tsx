@@ -37,7 +37,7 @@ export function EditRolesDialog({
       });
       if (!res.success) throw new Error(getErrorMessage(res));
     },
-    'Peran diperbarui — sesi pengguna dicabut',
+    'Peran diperbarui . sesi pengguna dicabut',
     onDone,
   );
 

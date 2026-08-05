@@ -106,7 +106,7 @@ export default function DisputesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Sengketa</h1>
         <p className="text-sm text-muted-foreground">
-          Mediasi sengketa pelanggan &amp; mitra — klik baris untuk membuka ruang sengketa dan form
+          Mediasi sengketa pelanggan &amp; mitra . klik baris untuk membuka ruang sengketa dan form
           resolusi.
         </p>
       </div>

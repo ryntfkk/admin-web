@@ -19,7 +19,7 @@ interface State {
  * admin jadi layar putih. Sebelumnya kegagalan render (mis. objek sqlc mentah
  * ikut dirender sebagai React child) menjatuhkan seluruh aplikasi tanpa pesan.
  *
- * Error boundary hanya bisa berupa class component — belum ada padanan hook.
+ * Error boundary hanya bisa berupa class component . belum ada padanan hook.
  */
 export default class ErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null };

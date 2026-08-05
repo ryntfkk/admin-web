@@ -132,7 +132,7 @@ function EntityPageInner({
                     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
                     e.preventDefault();
                     const delta = e.key === 'ArrowRight' ? 1 : -1;
-                    // Membungkus di kedua ujung — perilaku baku pola tab ARIA.
+                    // Membungkus di kedua ujung . perilaku baku pola tab ARIA.
                     const next = tabs[(i + delta + tabs.length) % tabs.length];
                     selectTab(next.id);
                     const el = e.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[
@@ -168,7 +168,7 @@ function EntityPageInner({
 }
 
 /**
- * Kartu bagian di dalam tab detail — judul + isi, dengan slot aksi opsional.
+ * Kartu bagian di dalam tab detail . judul + isi, dengan slot aksi opsional.
  */
 export function EntitySection({
   title,

@@ -17,7 +17,7 @@ import { CenteredSpinner } from '@/components/ui/feedback';
 
 // Halaman paling merusak di panel ini: ia menghapus data secara PERMANEN.
 //
-// Karena itu alurnya sengaja berlapis — kebijakan harus diaktifkan dulu, jumlah
+// Karena itu alurnya sengaja berlapis . kebijakan harus diaktifkan dulu, jumlah
 // kandidat ditampilkan sebelum aksi, dan pemusnahan menuntut frasa konfirmasi.
 // Backend menegakkan ketiganya; UI hanya mencerminkannya.
 const FRASA_KONFIRMASI = 'MUSNAHKAN';
@@ -54,7 +54,7 @@ export default function RetentionPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Masa Penyimpanan &amp; Pemusnahan Data</h1>
         <p className="text-sm text-muted-foreground">
           Menepati janji di Kebijakan Privasi bahwa data dimusnahkan setelah masa
-          penyimpanan berakhir. Sistem hanya <strong>menghitung</strong> kandidat —
+          penyimpanan berakhir. Sistem hanya <strong>menghitung</strong> kandidat .
           pemusnahan selalu Anda yang memutuskan.
         </p>
       </div>
@@ -160,7 +160,7 @@ function KategoriCard({
     <EntitySection title={row.label}>
       <div className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Sumber: <code className="rounded bg-muted px-1">{row.sumber}</code> — {row.catatan}
+          Sumber: <code className="rounded bg-muted px-1">{row.sumber}</code> . {row.catatan}
         </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -206,7 +206,7 @@ function KategoriCard({
           <span>
             Aktifkan kebijakan ini
             <span className="block text-xs text-muted-foreground">
-              Selama mati, tombol musnahkan ditolak backend — bahkan bila kandidatnya ada.
+              Selama mati, tombol musnahkan ditolak backend . bahkan bila kandidatnya ada.
             </span>
           </span>
         </label>

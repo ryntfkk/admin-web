@@ -37,7 +37,7 @@ export interface ConfirmDialogProps {
 }
 
 /**
- * Dialog konfirmasi terpadu — pengganti `window.confirm()` dan modal konfirmasi
+ * Dialog konfirmasi terpadu . pengganti `window.confirm()` dan modal konfirmasi
  * bespoke yang sebelumnya tersebar di halaman users/services/reviews/dll.
  *
  * Karena panel admin hanya punya SATU tingkat hak akses (setiap admin bisa
@@ -125,7 +125,7 @@ function ConfirmDialogForm({
               reason.length > 0 && !reasonOk ? 'text-destructive' : 'text-muted-foreground',
             )}
           >
-            Minimal {MIN_REASON_LENGTH} karakter — tersimpan di audit log ({reason.trim().length}/
+            Minimal {MIN_REASON_LENGTH} karakter . tersimpan di audit log ({reason.trim().length}/
             {MIN_REASON_LENGTH}).
           </p>
         </div>

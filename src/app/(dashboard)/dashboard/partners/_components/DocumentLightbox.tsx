@@ -16,7 +16,7 @@ export interface LightboxItem {
  *
  * Ada supaya admin berhenti membuka satu tab browser per dokumen. Untuk vendor
  * itu lima tab, dan setelah dua mitra tidak ada lagi yang tahu tab mana milik
- * siapa — sumber kesalahan verifikasi yang tidak pernah terlihat di log.
+ * siapa . sumber kesalahan verifikasi yang tidak pernah terlihat di log.
  *
  * `object-contain`, bukan `cover`: KTP yang terpotong tepinya justru menutupi
  * bagian yang harus dibaca admin.

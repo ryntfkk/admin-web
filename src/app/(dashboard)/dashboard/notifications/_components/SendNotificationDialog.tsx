@@ -25,7 +25,7 @@ const TARGET_LABEL: Record<Target, string> = {
 /**
  * Compose notifikasi keluar.
  *
- * Sebelumnya halaman Notifikasi hanya bisa MENGHAPUS — tidak ada cara mengumumkan
+ * Sebelumnya halaman Notifikasi hanya bisa MENGHAPUS . tidak ada cara mengumumkan
  * apa pun ke pengguna dari dalam sistem.
  */
 export default function SendNotificationDialog({
@@ -142,7 +142,7 @@ export default function SendNotificationDialog({
       </Modal>
 
       {/* Broadcast tidak bisa ditarik kembali setelah terkirim, jadi butuh
-          konfirmasi terpisah — beda dari kirim ke satu orang. */}
+          konfirmasi terpisah . beda dari kirim ke satu orang. */}
       <ConfirmDialog
         open={confirming}
         onClose={() => setConfirming(false)}

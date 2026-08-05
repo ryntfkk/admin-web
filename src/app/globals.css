@@ -118,7 +118,7 @@
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.205 0 0);
   /* Di latar gelap warna status dibuat lebih terang & kurang jenuh agar tetap
-     terbaca — pola yang sama dipakai --destructive. */
+     terbaca . pola yang sama dipakai --destructive. */
   --success: oklch(0.765 0.155 163.2);
   --success-foreground: oklch(0.205 0 0);
   --warning: oklch(0.828 0.169 84.4);

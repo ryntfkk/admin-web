@@ -89,7 +89,7 @@ export default function Topbar() {
       </nav>
 
       <div className="flex items-center gap-2">
-        {/* Pemicu yang bisa diklik untuk pintasan Ctrl+K — agar fiturnya bisa ditemukan. */}
+        {/* Pemicu yang bisa diklik untuk pintasan Ctrl+K . agar fiturnya bisa ditemukan. */}
         <button
           type="button"
           onClick={openCommandPalette}

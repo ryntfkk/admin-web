@@ -17,7 +17,7 @@ import { CenteredSpinner } from '@/components/ui/feedback';
 //
 // Semua field boleh kosong; web merender yang terisi saja. Yang PENTING:
 // `support_email` adalah satu-satunya kanal yang bisa dijangkau orang yang
-// TIDAK bisa masuk akun — chat CS in-app butuh login. Mengosongkannya berarti
+// TIDAK bisa masuk akun . chat CS in-app butuh login. Mengosongkannya berarti
 // pengguna yang terkunci tidak punya jalan menghubungi siapa pun.
 export default function ProfileForm() {
   const qc = useQueryClient();
@@ -51,10 +51,10 @@ export default function ProfileForm() {
 
 const FIELDS: { key: keyof PlatformProfile; label: string; hint?: string; placeholder?: string }[] = [
   { key: 'brand_name', label: 'Nama merek', hint: 'Dipakai di halaman Tentang Kami dan footer.' },
-  { key: 'legal_name', label: 'Nama badan usaha', hint: 'PT/CV resmi. Kosongkan bila belum ada — barisnya tidak akan tampil di web.', placeholder: 'PT Contoh Jasa Nusantara' },
+  { key: 'legal_name', label: 'Nama badan usaha', hint: 'PT/CV resmi. Kosongkan bila belum ada . barisnya tidak akan tampil di web.', placeholder: 'PT Contoh Jasa Nusantara' },
   { key: 'business_id', label: 'NIB / NPWP', hint: 'Kosongkan bila belum terdaftar.' },
   { key: 'address', label: 'Alamat terdaftar' },
-  { key: 'support_email', label: 'Email dukungan', hint: 'WAJIB diisi — satu-satunya kanal bagi pengguna yang tidak bisa masuk akun.', placeholder: 'info@poskojasa.com' },
+  { key: 'support_email', label: 'Email dukungan', hint: 'WAJIB diisi . satu-satunya kanal bagi pengguna yang tidak bisa masuk akun.', placeholder: 'info@poskojasa.com' },
   { key: 'dpo_email', label: 'Email Pengendali Data', hint: 'Untuk urusan data pribadi (UU PDP). Bila kosong, web memakai email dukungan.' },
   { key: 'support_phone', label: 'Telepon dukungan', hint: 'Opsional.' },
   { key: 'support_whatsapp', label: 'WhatsApp dukungan', hint: 'Opsional. Kosongkan bila CS hanya lewat chat in-app + email.' },

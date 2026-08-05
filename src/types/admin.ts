@@ -14,7 +14,7 @@ export interface PendingPartnerRow {
   verification_status: string;
   submitted_at: string;
   // V1/V4: partner_type membedakan perorangan vs badan usaha.
-  // `name` TETAP nama ORANG (untuk vendor: PIC) — admin membutuhkannya untuk
+  // `name` TETAP nama ORANG (untuk vendor: PIC) . admin membutuhkannya untuk
   // mencocokkan KTP. display_name adalah nama yang dilihat PELANGGAN.
   partner_type: PartnerType;
   display_name: NullString;
@@ -39,7 +39,7 @@ export const ENTITY_FORMS = [
 export type EntityForm = (typeof ENTITY_FORMS)[number];
 
 // V4 §7.2.4: checklist dokumen wajib. Aturannya datang dari backend
-// (requiredDocsFor) — JANGAN disalin ke sini, karena gate approve memakai
+// (requiredDocsFor) . JANGAN disalin ke sini, karena gate approve memakai
 // aturan backend dan salinan di frontend akan melenceng diam-diam.
 export interface VerificationChecklistItem {
   doc_type: string;
@@ -94,7 +94,7 @@ export interface PartnerDetailRow extends PendingPartnerRow {
   address_detail: NullString;
   avatar_url: NullString;
   // V4: identitas badan usaha. Selalu null untuk perorangan.
-  // NPWP dikirim sudah terdekripsi ('' bila tidak ada) — PII pajak, jadi UI
+  // NPWP dikirim sudah terdekripsi ('' bila tidak ada) . PII pajak, jadi UI
   // menyembunyikannya di balik tombol "tampilkan" seperti decrypted_ktp.
   decrypted_npwp: string;
   entity_form: NullString;
@@ -128,7 +128,7 @@ export interface PartnerServiceRow {
   created_at: string;
 }
 
-// F5: audit log mitra — timeline aksi (delete dokumen, update profile, dll).
+// F5: audit log mitra . timeline aksi (delete dokumen, update profile, dll).
 export interface PartnerActionLog {
   id: string;
   partner_id: string;
@@ -158,7 +158,7 @@ export interface DisputeRow {
 }
 
 /**
- * Performa mitra (§11.1 prioritas 5). Dihitung SERVER atas seluruh riwayat —
+ * Performa mitra (§11.1 prioritas 5). Dihitung SERVER atas seluruh riwayat .
  * bukan ringkasan dari baris yang termuat, karena angka ini jadi dasar
  * keputusan suspensi.
  */
@@ -198,7 +198,7 @@ export interface DisputeDetailRow {
   /** Nama badan hukum mitra. Admin yang memutus sengketa harus tahu badan hukum
    *  mana yang terlibat, bukan hanya nama merek atau nama PIC (§2.3). */
   partner_legal_name: string;
-  /** Status order saat ini — resolusi hanya sah bila 'DISPUTED'. */
+  /** Status order saat ini . resolusi hanya sah bila 'DISPUTED'. */
   order_status: string;
   /** Total dana terkumpul (order + biaya tambahan PAID) = plafon refund + payout. */
   total_collected: number;
@@ -214,7 +214,7 @@ export interface WithdrawalRow {
   transaction_id: NullUUID;
   user_id: string;
   // Nama ORANG pemegang akun. Untuk mitra badan usaha ini nama PIC, BUKAN
-  // penerima dana — lihat partner_legal_name.
+  // penerima dana . lihat partner_legal_name.
   user_name: string;
   // Nama badan hukum penerima dana. Null untuk penarik yang bukan mitra.
   // Wajib ditampilkan di layar ini: tanpa itu admin menyetujui transfer ke
@@ -400,7 +400,7 @@ export interface UserDetailRow {
   deleted_at: NullTime;
   /**
    * Sinyal auth. Tanpa ini panel tidak punya cara membedakan akun Google tanpa
-   * password dari akun biasa — admin yang menyelidiki "user tidak bisa login"
+   * password dari akun biasa . admin yang menyelidiki "user tidak bisa login"
    * hanya melihat baris yang tampak normal.
    */
   phone_verified: boolean;
@@ -639,7 +639,7 @@ export interface OrderStatusHistoryRow {
 
 // ── Fase 3: kontrol penuh data ──────────────────────────────────────
 // Endpoint di bawah ini sudah memakai lapisan DTO backend (internal/admin/mapper.go),
-// jadi nilainya polos — TIDAK perlu dibongkar dengan helper di lib/sql.ts.
+// jadi nilainya polos . TIDAK perlu dibongkar dengan helper di lib/sql.ts.
 
 export interface WorkingHour {
   id: string;
@@ -719,7 +719,7 @@ export interface RequirementCatalogItem {
   icon: string;
   sort_order: number;
   is_active: boolean;
-  // Jumlah layanan yang memakai item ini — dipakai memperingatkan dampak
+  // Jumlah layanan yang memakai item ini . dipakai memperingatkan dampak
   // sebelum menonaktifkan.
   used_by_count: number;
 }

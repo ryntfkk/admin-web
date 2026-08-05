@@ -16,7 +16,7 @@ import { ROLE_OPTIONS } from './UserAccountDialogs';
  * Pembuatan akun oleh admin.
  *
  * `endpoint` dibedakan supaya pembuatan akun ADMIN punya jalur & audit sendiri
- * (`CREATE_ADMIN`) — menambah pengelola bukan peristiwa yang sama dengan
+ * (`CREATE_ADMIN`) . menambah pengelola bukan peristiwa yang sama dengan
  * menambah pelanggan biasa.
  */
 export default function CreateUserDialog({
@@ -48,22 +48,22 @@ export default function CreateUserDialog({
 
       const body = isAdmin
         ? {
-            username: form.username.trim(),
-            name: form.name.trim(),
-            phone: form.phone.trim(),
-            email: form.email.trim(),
-            password: form.password,
-          }
+          username: form.username.trim(),
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          password: form.password,
+        }
         : {
-            username: form.username.trim(),
-            name: form.name.trim(),
-            phone: form.phone.trim(),
-            email: form.email.trim(),
-            password: form.password,
-            roles: [form.active_role],
-            active_role: form.active_role,
-            is_verified: form.is_verified,
-          };
+          username: form.username.trim(),
+          name: form.name.trim(),
+          phone: form.phone.trim(),
+          email: form.email.trim(),
+          password: form.password,
+          roles: [form.active_role],
+          active_role: form.active_role,
+          is_verified: form.is_verified,
+        };
 
       const res = await fetchAPI(isAdmin ? '/admin/admins' : '/admin/users', {
         method: 'POST',
@@ -141,7 +141,7 @@ export default function CreateUserDialog({
             placeholder="Minimal 8 karakter"
           />
           <p className="text-xs text-muted-foreground">
-            Sampaikan ke pemilik akun lewat kanal yang aman — password tidak pernah disimpan di audit
+            Sampaikan ke pemilik akun lewat kanal yang aman . password tidak pernah disimpan di audit
             log.
           </p>
         </div>

@@ -32,7 +32,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Setelan Platform</h1>
         <p className="text-sm text-muted-foreground">
-          Tarif dan batas yang dipakai seluruh sistem. Perubahan berlaku seketika — tanpa deploy
+          Tarif dan batas yang dipakai seluruh sistem. Perubahan berlaku seketika . tanpa deploy
           ulang.
         </p>
       </div>
@@ -66,7 +66,7 @@ function SettingsForm({
     base_transport_fee: String(settings.base_transport_fee),
     transport_fee_per_km: String(settings.transport_fee_per_km),
     admin_fee: String(settings.admin_fee),
-    // Disimpan sebagai pecahan (0.12) tapi diedit sebagai persen (12) — admin
+    // Disimpan sebagai pecahan (0.12) tapi diedit sebagai persen (12) . admin
     // berpikir dalam persen, bukan pecahan.
     platform_fee_percent: String(Math.round(settings.platform_fee_rate * 10000) / 100),
     min_transaction: String(settings.min_transaction),
@@ -75,7 +75,7 @@ function SettingsForm({
     max_wallet_adjustment: String(settings.max_wallet_adjustment),
     max_additional_fee: String(settings.max_additional_fee),
   });
-  // Sakelar penegakan persyaratan — bukan angka, jadi di luar `form` yang
+  // Sakelar penegakan persyaratan . bukan angka, jadi di luar `form` yang
   // seluruhnya string numerik.
   const [requireReqAck, setRequireReqAck] = useState(settings.require_requirements_ack ?? false);
   const [confirming, setConfirming] = useState(false);
@@ -211,7 +211,7 @@ function SettingsForm({
               <span className="mt-1 block text-xs text-muted-foreground">
                 Bila aktif, pesanan yang memuat persyaratan <strong>wajib</strong> ditolak
                 (400) bila pelanggan belum menyetujuinya. Nyalakan hanya setelah aplikasi
-                web/mobile terbaru benar-benar mengirim persetujuan itu — versi lama akan
+                web/mobile terbaru benar-benar mengirim persetujuan itu . versi lama akan
                 gagal memesan seluruhnya. Bisa dimatikan lagi kapan saja tanpa deploy.
               </span>
             </span>
@@ -226,7 +226,7 @@ function SettingsForm({
           <Button onClick={() => setConfirming(true)}>Simpan setelan</Button>
         </div>
 
-        {/* Identitas & kontak — disimpan terpisah (tabel platform_profile),
+        {/* Identitas & kontak . disimpan terpisah (tabel platform_profile),
             jadi punya tombol Simpan sendiri. */}
         <ProfileForm />
       </div>

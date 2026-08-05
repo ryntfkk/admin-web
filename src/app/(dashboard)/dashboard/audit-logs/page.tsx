@@ -149,7 +149,7 @@ export default function AuditLogsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Audit Log</h1>
           <p className="text-sm text-muted-foreground">
-            Riwayat tindakan admin — klik baris untuk melihat detail perubahan lengkap.
+            Riwayat tindakan admin . klik baris untuk melihat detail perubahan lengkap.
           </p>
         </div>
         <Button variant="outline" disabled={exporting || (data?.pagination?.total ?? 0) === 0} onClick={exportCSV}>

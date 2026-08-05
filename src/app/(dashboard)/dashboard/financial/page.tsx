@@ -257,7 +257,7 @@ function LedgerTab() {
  * Saldo per pengguna.
  *
  * Memakai `GET /admin/financial/wallets` yang sudah lama ada di backend tapi
- * TIDAK pernah dipanggil UI mana pun — sehingga admin bisa menyesuaikan saldo
+ * TIDAK pernah dipanggil UI mana pun . sehingga admin bisa menyesuaikan saldo
  * seseorang tanpa pernah bisa melihat daftar saldo seluruh platform.
  */
 function WalletsTab() {
@@ -311,7 +311,7 @@ function WalletsTab() {
         <p className="text-sm text-muted-foreground">
           Angka di sini dihitung dari <strong>ledger</strong> (<code>wallet_transactions</code>):
           total masuk dikurangi total keluar. Itu <em>bukan</em> otomatis sama dengan saldo yang bisa
-          dibelanjakan pengguna — bila keduanya berbeda, berarti ada perpindahan uang yang tak
+          dibelanjakan pengguna . bila keduanya berbeda, berarti ada perpindahan uang yang tak
           tercatat di ledger dan perlu ditelusuri. Klik baris untuk melihat saldo aktual beserta
           riwayat transaksinya.
         </p>

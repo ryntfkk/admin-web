@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   // @ts-ignore
   allowedDevOrigins: ['192.168.0.127', 'localhost'],
   // S5: header keamanan untuk admin-web (jalan di PC lokal, tapi header tetap murah
-  // & bermanfaat — cegah clickjacking, MIME-sniff, kebocoran referrer). Tanpa domain
+  // & bermanfaat . cegah clickjacking, MIME-sniff, kebocoran referrer). Tanpa domain
   // Midtrans (admin tak memuat Snap). CSP Report-Only agar tak memblokir sebelum diuji.
   async headers() {
     return [

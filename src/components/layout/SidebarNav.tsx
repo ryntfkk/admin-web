@@ -16,7 +16,7 @@ export default function SidebarNav({
 }: {
   /** Mode ikon saja (sidebar desktop yang diciutkan). */
   collapsed?: boolean;
-  /** Dipanggil setelah menu diklik — dipakai drawer mobile untuk menutup diri. */
+  /** Dipanggil setelah menu diklik . dipakai drawer mobile untuk menutup diri. */
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -56,7 +56,7 @@ export default function SidebarNav({
                 <item.icon className="size-4.5 shrink-0" />
 
                 {collapsed ? (
-                  // Saat diciutkan tak ada ruang untuk angka — cukup titik penanda
+                  // Saat diciutkan tak ada ruang untuk angka . cukup titik penanda
                   // agar admin tetap melihat ada antrean yang menunggu.
                   count > 0 && (
                     <span

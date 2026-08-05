@@ -49,14 +49,14 @@ export default function OrderDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab order={data} /> },
-        { id: 'riwayat', label: 'Riwayat Status', content: <StatusHistoryTab orderId={orderId} /> },
-        {
-          id: 'kontrol',
-          label: 'Kontrol Admin',
-          content: <AdminControlTab order={data} orderId={orderId} />,
-        },
-      ]
+      { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab order={data} /> },
+      { id: 'riwayat', label: 'Riwayat Status', content: <StatusHistoryTab orderId={orderId} /> },
+      {
+        id: 'kontrol',
+        label: 'Kontrol Admin',
+        content: <AdminControlTab order={data} orderId={orderId} />,
+      },
+    ]
     : [];
 
   return (
@@ -65,7 +65,7 @@ export default function OrderDetailPage() {
       backLabel="Semua transaksi"
       isLoading={isLoading}
       error={error}
-      title={<span className="font-mono">{data?.order_number ?? '—'}</span>}
+      title={<span className="font-mono">{data?.order_number ?? '.'}</span>}
       subtitle={
         data && (
           <span>
@@ -215,7 +215,7 @@ function AdminControlTab({ order, orderId }: { order: OrderDetailRow; orderId: s
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Kenapa aksi tidak tersedia — sebelumnya panel ini sekadar menghilang tanpa
+  // Kenapa aksi tidak tersedia . sebelumnya panel ini sekadar menghilang tanpa
   // penjelasan, sehingga admin tak tahu harus lewat jalur mana.
   if (!FORCE_CANCELLABLE.has(order.status)) {
     return (
@@ -231,7 +231,7 @@ function AdminControlTab({ order, orderId }: { order: OrderDetailRow; orderId: s
               >
                 Sesuaikan Saldo
               </Link>{' '}
-              pada pelanggan dan mitra terkait — dua langkah terpisah yang keduanya teraudit.
+              pada pelanggan dan mitra terkait . dua langkah terpisah yang keduanya teraudit.
             </>
           ) : order.status === 'DISPUTED' ? (
             <>
@@ -244,7 +244,7 @@ function AdminControlTab({ order, orderId }: { order: OrderDetailRow; orderId: s
           ) : (
             <>
               Status <strong>{ORDER_STATUS_LABELS[order.status] || order.status}</strong> bersifat
-              final — tidak ada dana yang perlu dikembalikan.
+              final . tidak ada dana yang perlu dikembalikan.
             </>
           )}
         </p>

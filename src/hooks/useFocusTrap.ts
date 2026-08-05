@@ -16,7 +16,7 @@ const FOCUSABLE = [
  * lalu MENGEMBALIKAN fokus ke elemen pemicu saat ditutup.
  *
  * Tanpa ini, Tab bocor ke halaman di belakang overlay dan saat dialog ditutup
- * fokus terlempar ke awal dokumen — pengguna keyboard harus menelusuri ulang
+ * fokus terlempar ke awal dokumen . pengguna keyboard harus menelusuri ulang
  * seluruh sidebar untuk kembali ke tombol yang baru saja ditekan.
  *
  * Elemen container WAJIB punya `tabIndex={-1}` agar bisa menerima fokus awal
@@ -66,7 +66,7 @@ export function useFocusTrap<T extends HTMLElement>(active: boolean) {
     return () => {
       container.removeEventListener('keydown', onKeyDown);
       // Elemen pemicu bisa saja sudah lepas dari DOM (mis. baris tabel yang
-      // hilang setelah dihapus) — abaikan diam-diam bila begitu.
+      // hilang setelah dihapus) . abaikan diam-diam bila begitu.
       if (trigger && document.contains(trigger)) trigger.focus();
     };
   }, [active]);

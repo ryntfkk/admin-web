@@ -71,26 +71,26 @@ export default function ServiceDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        {
-          id: 'detail',
-          label: 'Detail',
-          // `key` membuat state form ter-inisialisasi ulang saat layanan berganti,
-          // tanpa efek penyalin yang bisa menimpa suntingan yang belum disimpan.
-          content: <ServiceForm key={data.id} detail={data} onSaved={invalidate} />,
-        },
-        {
-          id: 'foto',
-          label: 'Foto',
-          count: data.photos?.length ?? 0,
-          content: <PhotosTab serviceId={serviceId} photos={data.photos ?? []} onChanged={invalidate} />,
-        },
-        {
-          id: 'variasi',
-          label: 'Variasi',
-          count: data.variations?.length ?? 0,
-          content: <VariationsTab serviceId={serviceId} detail={data} onChanged={invalidate} />,
-        },
-      ]
+      {
+        id: 'detail',
+        label: 'Detail',
+        // `key` membuat state form ter-inisialisasi ulang saat layanan berganti,
+        // tanpa efek penyalin yang bisa menimpa suntingan yang belum disimpan.
+        content: <ServiceForm key={data.id} detail={data} onSaved={invalidate} />,
+      },
+      {
+        id: 'foto',
+        label: 'Foto',
+        count: data.photos?.length ?? 0,
+        content: <PhotosTab serviceId={serviceId} photos={data.photos ?? []} onChanged={invalidate} />,
+      },
+      {
+        id: 'variasi',
+        label: 'Variasi',
+        count: data.variations?.length ?? 0,
+        content: <VariationsTab serviceId={serviceId} detail={data} onChanged={invalidate} />,
+      },
+    ]
     : [];
 
   return (
@@ -100,7 +100,7 @@ export default function ServiceDetailPage() {
         backLabel="Semua layanan"
         isLoading={isLoading}
         error={error}
-        title={data?.name ?? '—'}
+        title={data?.name ?? '.'}
         subtitle={
           data && (
             <span>
@@ -192,7 +192,7 @@ function ServiceForm({ detail, onSaved }: { detail: ServiceDetail; onSaved: () =
   const save = useMutation({
     mutationFn: async () => {
       // Layanan bervariasi: services.price diturunkan dari variasi TERMURAH,
-      // bukan input admin — cegah "harga mulai dari" desync dari variasi.
+      // bukan input admin . cegah "harga mulai dari" desync dari variasi.
       const priceNum = hasVariations ? minVariationPrice : parseInt(price, 10);
       // per_hour: estimasi dikunci ke 60 menit (1 jam); selain itu dari input admin.
       const durationNum = unit === 'per_hour' ? 60 : parseInt(estimatedDuration, 10);
@@ -328,7 +328,7 @@ function ServiceForm({ detail, onSaved }: { detail: ServiceDetail; onSaved: () =
 
       <EntitySection
         title="Cakupan layanan"
-        description="Satu poin per baris — tampil sebagai daftar di halaman layanan."
+        description="Satu poin per baris . tampil sebagai daftar di halaman layanan."
       >
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -383,7 +383,7 @@ function PhotosTab({
   const addPhoto = useMutation({
     mutationFn: async () => {
       if (!selectedFile) throw new Error('Pilih file foto terlebih dahulu');
-      const url = await uploadFileToStorage(selectedFile, 'service_photo');
+      const url = await uploadFileToStorage(selectedFile, 'service');
       if (!url) throw new Error('Gagal mengupload foto');
 
       const res = await fetchAPI(`/admin/services/${serviceId}/photos`, {
@@ -434,7 +434,7 @@ function PhotosTab({
     <>
       <EntitySection
         title="Foto layanan"
-        description={`${photos.length} foto — foto utama dipakai sebagai sampul di aplikasi.`}
+        description={`${photos.length} foto . foto utama dipakai sebagai sampul di aplikasi.`}
         actions={
           !adding && (
             <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
@@ -581,7 +581,7 @@ function VariationsTab({
     <>
       <EntitySection
         title="Variasi harga"
-        description="Diatur mitra dari aplikasi. Admin hanya dapat menghapus variasi bermasalah — harga layanan otomatis mengikuti variasi termurah yang tersisa, dan minimal satu variasi harus ada."
+        description="Diatur mitra dari aplikasi. Admin hanya dapat menghapus variasi bermasalah . harga layanan otomatis mengikuti variasi termurah yang tersisa, dan minimal satu variasi harus ada."
       >
         <div className="divide-y divide-border rounded-lg border border-border">
           {variations.map((v) => (

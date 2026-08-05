@@ -41,7 +41,7 @@ const DURATION_OPTIONS = [
  * Semua dialog aksi untuk satu pengguna.
  *
  * Setiap dialog di-mount hanya saat aksinya dipilih (`action === '…'`), sehingga
- * isian formulir selalu mulai bersih tanpa efek pereset — mis. alasan suspend
+ * isian formulir selalu mulai bersih tanpa efek pereset . mis. alasan suspend
  * tidak pernah terbawa ke dialog penyesuaian saldo.
  */
 export default function UserActionDialogs({
@@ -273,7 +273,7 @@ function EditProfileDialog({
           <Input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           <p className={`text-xs ${phoneValid ? 'text-muted-foreground' : 'text-destructive'}`}>
             {phoneValid
-              ? 'Disimpan dalam format kanonik 62xxx oleh backend. Mengubah nomor akan mencabut status terverifikasi — admin tidak bisa membuktikan OTP.'
+              ? 'Disimpan dalam format kanonik 62xxx oleh backend. Mengubah nomor akan mencabut status terverifikasi . admin tidak bisa membuktikan OTP.'
               : 'Format nomor tidak valid (contoh: 08123456789 atau 628123456789).'}
           </p>
         </div>
@@ -420,7 +420,7 @@ function AdjustWalletDialog({
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label>Alasan (wajib — tercatat di audit log)</Label>
+          <Label>Alasan (wajib . tercatat di audit log)</Label>
           <Textarea
             value={form.reason}
             onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}

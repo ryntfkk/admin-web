@@ -17,7 +17,7 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 
 // Katalog persyaratan yang bisa dipilih mitra pada layanannya.
 //
-// Menonaktifkan item TIDAK menghapusnya dari layanan yang sudah memakainya —
+// Menonaktifkan item TIDAK menghapusnya dari layanan yang sudah memakainya .
 // FK-nya ON DELETE RESTRICT, dan itu disengaja: pesanan yang sudah terlanjur
 // menyimpan snapshot tidak boleh kehilangan maknanya. Nonaktif hanya
 // menyembunyikan item dari pilihan BARU.
@@ -70,7 +70,7 @@ export default function RequirementsPage() {
       header: 'Dipakai',
       cell: (r) => (
         <span className="text-muted-foreground">
-          {r.used_by_count > 0 ? `${r.used_by_count} layanan` : '—'}
+          {r.used_by_count > 0 ? `${r.used_by_count} layanan` : '.'}
         </span>
       ),
       hideBelow: 'md',
@@ -108,7 +108,7 @@ export default function RequirementsPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Persyaratan Pelanggan</h1>
           <p className="text-sm text-muted-foreground">
-            Daftar baku yang bisa dipilih mitra pada layanannya — mis. stop kontak, sumber
+            Daftar baku yang bisa dipilih mitra pada layanannya . mis. stop kontak, sumber
             air, akses parkir. Menjaga kalimatnya konsisten agar pelanggan tidak membaca
             puluhan variasi untuk hal yang sama.
           </p>
@@ -192,7 +192,7 @@ function RequirementEditorDialog({
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Menonaktifkan item yang masih dipakai layanan hidup perlu diberitahukan —
+  // Menonaktifkan item yang masih dipakai layanan hidup perlu diberitahukan .
   // dampaknya tidak terlihat dari halaman ini.
   const willHideFromActiveServices =
     !form.is_active && (existing?.used_by_count ?? 0) > 0;
@@ -212,7 +212,7 @@ function RequirementEditorDialog({
           <p className="text-xs text-muted-foreground">
             {isCreate
               ? 'Huruf kecil, angka, dan garis bawah. Dipakai sebagai kunci tetap.'
-              : 'Code tidak bisa diubah — ia menjadi rujukan layanan dan kunci pada snapshot pesanan yang sudah terlanjur dibuat.'}
+              : 'Code tidak bisa diubah . ia menjadi rujukan layanan dan kunci pada snapshot pesanan yang sudah terlanjur dibuat.'}
           </p>
         </div>
 
@@ -281,7 +281,7 @@ function RequirementEditorDialog({
         {willHideFromActiveServices && (
           <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
             Item ini masih dipakai <strong>{existing!.used_by_count} layanan</strong>.
-            Menonaktifkannya <strong>tidak</strong> menghapusnya dari layanan tersebut —
+            Menonaktifkannya <strong>tidak</strong> menghapusnya dari layanan tersebut .
             pelanggan tetap melihatnya. Ia hanya hilang dari pilihan baru.
           </p>
         )}

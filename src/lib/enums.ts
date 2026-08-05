@@ -222,7 +222,7 @@ export function reportTypeVariant(type: string): 'info' | 'success' | 'warning' 
 }
 
 // ── Reviews ──────────────────────────────────────────────────────────
-// Backend memfilter `is_hidden = ($1 = 'true')` (AdminListReviews) — jadi nilai
+// Backend memfilter `is_hidden = ($1 = 'true')` (AdminListReviews) . jadi nilai
 // harus 'true'/'false', BUKAN 'hidden'/'visible' (yang keduanya jatuh ke visible).
 export const REVIEW_STATUS_OPTIONS = [
   { value: '', label: 'Semua' },

@@ -12,7 +12,7 @@ export type SheetSide = 'right' | 'left';
 /**
  * Panel geser dari tepi layar. Dipakai untuk aksi pendek yang butuh konteks
  * daftar tetap terlihat (mis. filter lanjutan, balas cepat). Detail entitas
- * yang panjang TIDAK memakai ini — gunakan halaman `/[id]` ber-URL.
+ * yang panjang TIDAK memakai ini . gunakan halaman `/[id]` ber-URL.
  */
 export function Sheet({
   open,

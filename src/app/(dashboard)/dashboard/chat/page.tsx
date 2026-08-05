@@ -88,7 +88,7 @@ export default function ChatPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
         <p className="text-sm text-muted-foreground">
-          Percakapan pelanggan ↔ mitra. Klik baris untuk membuka isinya — setiap akses baca tercatat
+          Percakapan pelanggan ↔ mitra. Klik baris untuk membuka isinya . setiap akses baca tercatat
           di Audit Log.
         </p>
       </div>
@@ -145,11 +145,10 @@ function ChatHistory({ roomId }: { roomId: string }) {
                 className={`flex ${msg.sender_role === 'customer' ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                    msg.sender_role === 'customer'
+                  className={`max-w-[70%] rounded-lg px-4 py-2 ${msg.sender_role === 'customer'
                       ? 'bg-muted text-foreground'
                       : 'bg-primary text-primary-foreground'
-                  }`}
+                    }`}
                 >
                   <div className="mb-1 text-xs font-medium opacity-70">
                     {msg.sender_name} ({msg.sender_role})

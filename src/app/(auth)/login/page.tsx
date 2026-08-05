@@ -57,7 +57,7 @@ export default function LoginPage() {
           method: 'POST',
           body: JSON.stringify({ target_role: ADMIN_ROLE }),
         });
-        // JANGAN jatuh ke login() dgn token non-admin bila switch gagal — semua
+        // JANGAN jatuh ke login() dgn token non-admin bila switch gagal . semua
         // /admin/* akan 403 & dashboard rusak tanpa pesan. Batalkan & beri error.
         if (!sw.success || !sw.data) {
           useAuthStore.getState().logout();

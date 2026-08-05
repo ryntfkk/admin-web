@@ -24,7 +24,11 @@ interface ConfirmResponse {
   uploaded_at: string;
 }
 
-export type FileType = 'avatar' | 'portfolio' | 'service_photo' | 'category_icon';
+/**
+ * HARUS ada di `allowedFileTypes` backend (internal/upload/service.go) . nilai di
+ * luar daftar ditolak 400 karena file_type ikut menyusun prefix object key S3.
+ */
+export type FileType = 'avatar' | 'portfolio' | 'service' | 'category';
 
 interface FileUploadProps {
   /** Maksimum ukuran file dalam MB (default 5) */
@@ -239,11 +243,12 @@ export async function uploadFileToStorage(
   file: File,
   fileType: FileType,
 ): Promise<string | null> {
+  // Backend menolak >5MB apa pun tipenya, jadi jangan menjanjikan lebih di sini.
   const maxSizes: Record<FileType, number> = {
     avatar: 5,
-    portfolio: 10,
-    service_photo: 10,
-    category_icon: 5,
+    portfolio: 5,
+    service: 5,
+    category: 5,
   };
 
   const maxSizeBytes = (maxSizes[fileType] || 5) * 1024 * 1024;

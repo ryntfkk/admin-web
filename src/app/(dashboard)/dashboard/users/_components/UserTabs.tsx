@@ -34,7 +34,7 @@ const TAB_PER_PAGE = 10;
 
 /**
  * Tab forensik per-pengguna. Dipisah dari halaman detail supaya masing-masing
- * mengambil datanya sendiri — hanya tab yang sedang dibuka yang memanggil API.
+ * mengambil datanya sendiri . hanya tab yang sedang dibuka yang memanggil API.
  */
 
 export function LoginHistoryTab({ userId }: { userId: string }) {

@@ -37,7 +37,7 @@ const ENTITY_ROUTES: { label: string; segment: string }[] = [
  * antrean lewat mouse memperlambat kerja triase harian.
  *
  * Menempelkan sebuah UUID (mis. dari audit log, laporan error, atau chat
- * dukungan) langsung menawarkan pembukaan detail entitas terkait — jenis
+ * dukungan) langsung menawarkan pembukaan detail entitas terkait . jenis
  * entitasnya tak bisa ditebak dari UUID saja, jadi keempatnya ditawarkan.
  */
 export default function CommandPalette() {
@@ -70,7 +70,7 @@ export default function CommandPalette() {
   if (!mounted || !open) return null;
 
   // Dialog di-mount ulang tiap kali dibuka, sehingga query & posisi kursor
-  // otomatis kembali kosong — tanpa efek yang mereset state.
+  // otomatis kembali kosong . tanpa efek yang mereset state.
   return createPortal(<CommandPaletteDialog onClose={() => setOpen(false)} />, document.body);
 }
 

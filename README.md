@@ -46,12 +46,12 @@ src/
 
 ## Catatan penting
 
-- **Token akses hanya di memori** (Zustand, tanpa persist) — refresh token ada di cookie HttpOnly. Jangan pindahkan ke localStorage.
+- **Token akses hanya di memori** (Zustand, tanpa persist) . refresh token ada di cookie HttpOnly. Jangan pindahkan ke localStorage.
 - **Setiap permintaan wajib** membawa header `X-Platform` + `X-App-Version` (lihat `src/lib/constants.ts`); backend menolak bila tidak ada.
 - **`src/lib/sql.ts` adalah tambalan sementara**: sebagian endpoint admin masih mengembalikan baris sqlc mentah sehingga `sql.NullString` dkk. bocor ke JSON. Berkas ini dipensiunkan modul demi modul seiring backend memakai DTO.
-- **Kosakata status** (label + warna badge) terpusat di `src/lib/enums.ts` — jangan duplikasi di halaman.
+- **Kosakata status** (label + warna badge) terpusat di `src/lib/enums.ts` . jangan duplikasi di halaman.
 - **Aksi merusak** memakai `ConfirmDialog` (alasan wajib + ketik-ulang), bukan `window.confirm()`.
-- **Warna status** pakai token semantik (`success`/`warning`/`info`/`destructive`), bukan kelas palet Tailwind mentah — agar benar di tema terang maupun gelap.
+- **Warna status** pakai token semantik (`success`/`warning`/`info`/`destructive`), bukan kelas palet Tailwind mentah . agar benar di tema terang maupun gelap.
 
 ## Perintah
 

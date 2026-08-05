@@ -233,11 +233,10 @@ function ReviewDetailModal({
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`size-5 ${
-                      star <= data.rating
+                    className={`size-5 ${star <= data.rating
                         ? 'fill-warning text-warning'
                         : 'fill-muted text-muted'
-                    }`}
+                      }`}
                   />
                 ))}
               </div>
@@ -245,7 +244,7 @@ function ReviewDetailModal({
             </div>
             {(() => {
               // Backend mengirim sub-rating sebagai sql.NullInt16 mentah
-              // ({Int16,Valid}) — WAJIB di-unwrap via nint, kalau tidak objeknya
+              // ({Int16,Valid}) . WAJIB di-unwrap via nint, kalau tidak objeknya
               // ter-render sebagai React child (crash) & guard-nya selalu truthy.
               const q = nint(data.rating_quality);
               const p = nint(data.rating_punctuality);
@@ -322,7 +321,7 @@ function ReviewDetailModal({
 
       {/* Hapus review = SOFT DELETE sejak migrasi 000055: barisnya tetap utuh
           (foto bukti kerja, sub-rating, tanggapan mitra) dan bisa dibuka lagi
-          dari arsip — bukti pekerjaan mitra tidak boleh musnah, lihat
+          dari arsip . bukti pekerjaan mitra tidak boleh musnah, lihat
           PLAN-KONTEN-LEGAL-CMS.md §3.5. "Sembunyikan" tetap jawaban yang benar
           untuk kasus biasa, jadi jalur hapus sengaja dibuat lebih berfriksi. */}
       <ConfirmDialog

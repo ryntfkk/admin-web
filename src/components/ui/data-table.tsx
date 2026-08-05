@@ -14,7 +14,7 @@ export interface Column<T> {
   header: React.ReactNode;
   cell: (row: T, index: number) => React.ReactNode;
   align?: 'left' | 'right' | 'center';
-  /** Sembunyikan kolom di bawah breakpoint ini — tabel admin sering >8 kolom. */
+  /** Sembunyikan kolom di bawah breakpoint ini . tabel admin sering >8 kolom. */
   hideBelow?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   headClassName?: string;
@@ -181,20 +181,20 @@ export function DataTable<T>({
                   className={cn(
                     'border-b border-border transition-colors hover:bg-muted/40',
                     onRowClick &&
-                      'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none',
+                    'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none',
                   )}
                   tabIndex={onRowClick ? 0 : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                   onKeyDown={
                     onRowClick
                       ? (e) => {
-                          // Baris bukan <a>, jadi Enter/Space harus ditangani manual
-                          // agar pengguna keyboard bisa membuka detail.
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            onRowClick(row);
-                          }
+                        // Baris bukan <a>, jadi Enter/Space harus ditangani manual
+                        // agar pengguna keyboard bisa membuka detail.
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onRowClick(row);
                         }
+                      }
                       : undefined
                   }
                 >

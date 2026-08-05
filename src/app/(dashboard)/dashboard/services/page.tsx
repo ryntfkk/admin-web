@@ -95,7 +95,7 @@ export default function ServicesPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Produk Jasa</h1>
         <p className="text-sm text-muted-foreground">
-          Moderasi layanan yang ditawarkan mitra — klik baris untuk mengedit, mengatur foto, dan
+          Moderasi layanan yang ditawarkan mitra . klik baris untuk mengedit, mengatur foto, dan
           variasi harga.
         </p>
       </div>

@@ -39,14 +39,14 @@ export default function ReportDetailPage() {
 
   const tabs: EntityTab[] = data
     ? [
-        { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab report={data} /> },
-        { id: 'percakapan', label: 'Percakapan', content: <ReportThread reportId={reportId} /> },
-        {
-          id: 'penanganan',
-          label: 'Penanganan',
-          content: <ResolutionTab report={data} reportId={reportId} />,
-        },
-      ]
+      { id: 'ringkasan', label: 'Ringkasan', content: <SummaryTab report={data} /> },
+      { id: 'percakapan', label: 'Percakapan', content: <ReportThread reportId={reportId} /> },
+      {
+        id: 'penanganan',
+        label: 'Penanganan',
+        content: <ResolutionTab report={data} reportId={reportId} />,
+      },
+    ]
     : [];
 
   return (
@@ -55,7 +55,7 @@ export default function ReportDetailPage() {
       backLabel="Semua laporan"
       isLoading={isLoading}
       error={error}
-      title={data ? `Laporan ${data.reason_category}` : '—'}
+      title={data ? `Laporan ${data.reason_category}` : '.'}
       subtitle={
         data && (
           <span>

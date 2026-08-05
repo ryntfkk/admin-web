@@ -22,7 +22,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: THEME_INIT_SCRIPT menambahkan kelas `dark` ke
-    // <html> sebelum hidrasi, jadi markup klien memang beda dari server — dan
+    // <html> sebelum hidrasi, jadi markup klien memang beda dari server . dan
     // itu disengaja.
     <html lang="id" className={`h-full antialiased ${inter.variable}`} suppressHydrationWarning>
       <head>

@@ -83,7 +83,7 @@ export default function AdminsPage() {
       <div className="flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
         <ShieldAlert className="mt-0.5 size-4 shrink-0" />
         <p>
-          Semua admin punya kuasa yang sama — termasuk mengubah saldo dan membatalkan pesanan. Tidak
+          Semua admin punya kuasa yang sama . termasuk mengubah saldo dan membatalkan pesanan. Tidak
           ada tingkatan hak akses, sehingga <strong>audit log</strong> adalah satu-satunya
           pertanggungjawaban. Admin juga sengaja tidak bisa menyuspend, menghapus, atau menurunkan
           peran admin lain lewat panel.

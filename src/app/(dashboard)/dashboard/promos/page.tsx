@@ -103,7 +103,7 @@ export default function PromosPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Promo</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola kode promo &amp; diskon — klik baris untuk mengedit.
+            Kelola kode promo &amp; diskon . klik baris untuk mengedit.
           </p>
         </div>
         <Button onClick={() => setEditor({ open: true, promo: null })}>
@@ -161,19 +161,19 @@ function PromoEditor({
   const [form, setForm] = useState<PromoFormValues>(
     promo
       ? {
-          code: promo.code,
-          name: promo.name,
-          description: nstr(promo.description) || '',
-          sponsor: promo.sponsor || 'platform',
-          discount_type: promo.discount_type,
-          value: promo.value,
-          max_discount: nint(promo.max_discount) || 0,
-          min_order_amount: promo.min_order_amount,
-          usage_limit: promo.usage_limit,
-          per_user_limit: promo.per_user_limit,
-          valid_until: toDatetimeLocal(promo.valid_until),
-          is_active: promo.is_active,
-        }
+        code: promo.code,
+        name: promo.name,
+        description: nstr(promo.description) || '',
+        sponsor: promo.sponsor || 'platform',
+        discount_type: promo.discount_type,
+        value: promo.value,
+        max_discount: nint(promo.max_discount) || 0,
+        min_order_amount: promo.min_order_amount,
+        usage_limit: promo.usage_limit,
+        per_user_limit: promo.per_user_limit,
+        valid_until: toDatetimeLocal(promo.valid_until),
+        is_active: promo.is_active,
+      }
       : { ...emptyForm },
   );
 
@@ -194,9 +194,9 @@ function PromoEditor({
       };
       const res = isEdit
         ? await fetchAPI(`/admin/promos/${promo!.id}`, {
-            method: 'PUT',
-            body: JSON.stringify(payload),
-          })
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        })
         : await fetchAPI('/admin/promos', { method: 'POST', body: JSON.stringify(payload) });
       if (!res.success) throw new Error(getErrorMessage(res));
     },

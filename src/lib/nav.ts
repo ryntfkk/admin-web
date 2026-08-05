@@ -41,7 +41,7 @@ export interface NavGroup {
  * antrean harian dulu (Operasional), baru penelusuran data, uang, lalu sistem.
  *
  * Catatan: verifikasi mitra memakai satu entri "Mitra" yang sama dengan
- * penelusuran data — badge merahnya sudah menandai antrean yang perlu ditinjau,
+ * penelusuran data . badge merahnya sudah menandai antrean yang perlu ditinjau,
  * jadi tak perlu dua entri ke rute yang sama (ambigu untuk penanda menu aktif).
  */
 export const NAV_GROUPS: NavGroup[] = [
@@ -88,7 +88,7 @@ export const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-/** Semua item, diratakan — untuk command palette & breadcrumb. */
+/** Semua item, diratakan . untuk command palette & breadcrumb. */
 export const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 
 /**

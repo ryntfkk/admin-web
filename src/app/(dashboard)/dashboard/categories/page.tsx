@@ -34,7 +34,7 @@ export default function CategoriesPage() {
   });
 
   const rows = data ?? [];
-  // Kategori utama (parent_id null) — dipakai untuk dropdown "induk" di editor.
+  // Kategori utama (parent_id null) . dipakai untuk dropdown "induk" di editor.
   const mainCategories = rows.filter((c) => !nuuid(c.parent_id));
 
   const columns: Column<Category>[] = [
@@ -42,8 +42,11 @@ export default function CategoriesPage() {
       key: 'icon',
       header: 'Ikon',
       width: '64px',
+      // Ikon hanya milik kategori utama; baris subkategori sengaja dikosongkan.
       cell: (c) =>
-        nstr(c.icon_url) ? (
+        nuuid(c.parent_id) ? (
+          <div className="size-8" />
+        ) : nstr(c.icon_url) ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={nstr(c.icon_url)!} alt={c.name} className="size-8 rounded object-cover" />
         ) : (
@@ -73,7 +76,7 @@ export default function CategoriesPage() {
       header: 'Jenis',
       cell: (c) =>
         nuuid(c.parent_id) ? (
-          <Badge variant="neutral">Sub · {nstr(c.parent_name) ?? '—'}</Badge>
+          <Badge variant="neutral">Sub · {nstr(c.parent_name) ?? '.'}</Badge>
         ) : (
           <Badge variant="info">Utama</Badge>
         ),
@@ -93,7 +96,7 @@ export default function CategoriesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Kategori</h1>
           <p className="text-sm text-muted-foreground">
-            Kelola kategori &amp; subkategori layanan (2 level) — klik baris untuk mengedit.
+            Kelola kategori &amp; subkategori layanan (2 level) . klik baris untuk mengedit.
           </p>
         </div>
         <Button onClick={() => setEditor({ open: true, cat: null })}>
@@ -152,14 +155,18 @@ function CategoryEditor({
   // Saat mengedit, jangan tawarkan diri sendiri sebagai induk (cegah siklus).
   const parentOptions = mains.filter((m) => m.id !== cat?.id);
 
+  // Subkategori tidak punya ikon di web publik (hanya chip teks), jadi editornya
+  // tidak menawarkan upload . dan ikon lama ikut dibuang saat jadi subkategori.
+  const isSub = !!parentId;
+
   const save = useMutation({
     mutationFn: async () => {
-      let finalIconUrl = iconUrl;
+      let finalIconUrl = isSub ? '' : iconUrl;
 
       // If a new file is selected, upload it first
-      if (selectedFile) {
+      if (selectedFile && !isSub) {
         const { uploadFileToStorage } = await import('@/components/ui/file-upload');
-        const uploadedUrl = await uploadFileToStorage(selectedFile, 'category_icon');
+        const uploadedUrl = await uploadFileToStorage(selectedFile, 'category');
         if (uploadedUrl) {
           finalIconUrl = uploadedUrl;
         } else {
@@ -177,9 +184,9 @@ function CategoryEditor({
       };
       const res = isEdit
         ? await fetchAPI(`/admin/categories/${cat!.id}`, {
-            method: 'PUT',
-            body: JSON.stringify(body),
-          })
+          method: 'PUT',
+          body: JSON.stringify(body),
+        })
         : await fetchAPI('/admin/categories', { method: 'POST', body: JSON.stringify(body) });
       if (!res.success) throw new Error(getErrorMessage(res));
     },
@@ -202,7 +209,7 @@ function CategoryEditor({
         <div className="flex flex-col gap-1.5">
           <Label>Kategori Induk</Label>
           <Select value={parentId} onChange={(e) => setParentId(e.target.value)}>
-            <option value="">— Kategori Utama (tanpa induk) —</option>
+            <option value="">. Kategori Utama (tanpa induk) .</option>
             {parentOptions.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -234,28 +241,34 @@ function CategoryEditor({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <Label>Ikon Kategori</Label>
-          <div className="flex items-center gap-4">
-            <FileUpload
-              currentUrl={iconUrl || undefined}
-              onFileSelect={(file) => setSelectedFile(file)}
-              onRemove={() => setIconUrl('')}
-              previewWidth={80}
-              previewHeight={80}
-              optional={true}
-            />
-            <div className="text-xs text-muted-foreground">
-              {iconUrl ? (
-                <p className="max-w-48 truncate">{iconUrl}</p>
-              ) : selectedFile ? (
-                <p>{selectedFile.name}</p>
-              ) : (
-                <p>Upload file atau biarkan kosong</p>
-              )}
+        {isSub ? (
+          <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+            Subkategori tidak memakai ikon . di web publik subkategori tampil sebagai chip teks.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <Label>Ikon Kategori</Label>
+            <div className="flex items-center gap-4">
+              <FileUpload
+                currentUrl={iconUrl || undefined}
+                onFileSelect={(file) => setSelectedFile(file)}
+                onRemove={() => setIconUrl('')}
+                previewWidth={80}
+                previewHeight={80}
+                optional={true}
+              />
+              <div className="text-xs text-muted-foreground">
+                {iconUrl ? (
+                  <p className="max-w-48 truncate">{iconUrl}</p>
+                ) : selectedFile ? (
+                  <p>{selectedFile.name}</p>
+                ) : (
+                  <p>Upload file atau biarkan kosong</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

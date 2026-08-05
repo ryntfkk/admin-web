@@ -21,7 +21,7 @@ import { CenteredSpinner } from '@/components/ui/feedback';
 //
 // Aturan yang menentukan bentuk halaman ini: VERSI YANG SUDAH TERBIT TIDAK BISA
 // DIUBAH. Isinya adalah teks yang sudah disetujui pengguna dan menjadi bukti
-// persetujuan mereka — mengubahnya sama dengan memalsukan bukti itu. Karena itu
+// persetujuan mereka . mengubahnya sama dengan memalsukan bukti itu. Karena itu
 // alurnya selalu: buat versi baru → sunting sebagai draf → terbitkan.
 
 const SLUGS: { slug: LegalSlug; label: string; catatan?: string }[] = [
@@ -60,7 +60,7 @@ export default function LegalPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Dokumen Legal</h1>
         <p className="text-sm text-muted-foreground">
           Setiap perubahan diterbitkan sebagai versi baru. Versi yang sudah
-          terbit tidak dapat diubah atau dihapus — itu teks yang sudah disetujui
+          terbit tidak dapat diubah atau dihapus . itu teks yang sudah disetujui
           pengguna dan menjadi bukti persetujuan mereka.
         </p>
       </div>
@@ -139,7 +139,7 @@ export default function LegalPage() {
   );
 }
 
-// Versi baru menyalin isi versi terakhir sebagai titik awal — menulis ulang
+// Versi baru menyalin isi versi terakhir sebagai titik awal . menulis ulang
 // dokumen legal dari nol setiap kali revisi kecil adalah undangan salah ketik.
 function CreateDraftModal({
   slug,
@@ -301,7 +301,7 @@ function DocumentModal({
     <Modal
       open
       onClose={onClose}
-      title={`${doc.title} — v${doc.version}`}
+      title={`${doc.title} . v${doc.version}`}
       description={terbit ? 'Versi terbit: hanya bisa dibaca.' : 'Draf: belum tampil di web.'}
       className="max-w-3xl"
     >
@@ -378,7 +378,7 @@ function DocumentModal({
         onClose={() => setConfirmPublish(false)}
         onConfirm={() => publish.mutate()}
         title="Terbitkan versi ini?"
-        description="Setelah terbit, isinya TIDAK BISA diubah atau dihapus lagi — versi ini akan menjadi dokumen yang disetujui pengguna. Untuk merevisi, buat versi baru."
+        description="Setelah terbit, isinya TIDAK BISA diubah atau dihapus lagi . versi ini akan menjadi dokumen yang disetujui pengguna. Untuk merevisi, buat versi baru."
         confirmLabel="Terbitkan"
         loading={publish.isPending}
       />
