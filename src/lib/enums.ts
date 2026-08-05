@@ -244,6 +244,7 @@ export const WALLET_TX_CATEGORY_LABELS: Record<string, string> = {
   WITHDRAWAL: 'Penarikan',
   TOPUP: 'Top-up',
   PAYMENT: 'Pembayaran',
+  ADJUSTMENT: 'Penyesuaian',
 };
 
 export const WALLET_TX_TYPE_LABELS: Record<string, string> = {
@@ -276,6 +277,138 @@ export function walletTxStatusVariant(status: string): 'warning' | 'success' | '
       return 'success';
     case 'FAILED':
       return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+// ── Transaksi (order) ───────────────────────────────────────────────
+
+/** Penyaring status pembayaran pada daftar transaksi. */
+export const ORDER_PAYMENT_OPTIONS = [
+  { value: '', label: 'Semua pembayaran' },
+  { value: 'paid', label: 'Sudah dibayar' },
+  { value: 'unpaid', label: 'Belum dibayar' },
+];
+
+/** Nilainya harus sama persis dengan klausa ORDER BY di AdminListOrders. */
+export const ORDER_SORT_OPTIONS = [
+  { value: '', label: 'Terbaru dibuat' },
+  { value: 'created_asc', label: 'Terlama dibuat' },
+  { value: 'scheduled_asc', label: 'Jadwal terdekat' },
+  { value: 'scheduled_desc', label: 'Jadwal terjauh' },
+  { value: 'amount_desc', label: 'Nilai terbesar' },
+  { value: 'amount_asc', label: 'Nilai terkecil' },
+];
+
+export const CANCELLED_BY_LABELS: Record<string, string> = {
+  CUSTOMER: 'Pelanggan',
+  PARTNER: 'Mitra',
+  SYSTEM: 'Sistem/Admin',
+};
+
+export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+  initial_payment: 'Pembayaran awal',
+  additional_payment: 'Pembayaran tambahan',
+  refund: 'Refund',
+};
+
+export const TRANSACTION_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Menunggu',
+  PAID: 'Lunas',
+  REFUNDED: 'Dikembalikan',
+  FAILED: 'Gagal',
+  DISBURSED: 'Dicairkan',
+  COMPLETED: 'Selesai',
+};
+
+export function transactionStatusVariant(
+  status: string,
+): 'warning' | 'success' | 'danger' | 'info' | 'neutral' {
+  switch (status) {
+    case 'PAID':
+    case 'COMPLETED':
+      return 'success';
+    case 'PENDING':
+      return 'warning';
+    case 'FAILED':
+      return 'danger';
+    case 'DISBURSED':
+    case 'REFUNDED':
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
+export const FEE_TYPE_LABELS: Record<string, string> = {
+  MATERIAL: 'Material',
+  SERVICE: 'Jasa',
+};
+
+export const ADDITIONAL_FEE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Menunggu persetujuan',
+  PAID: 'Dibayar',
+  REJECTED: 'Ditolak',
+};
+
+export function additionalFeeStatusVariant(
+  status: string,
+): 'warning' | 'success' | 'danger' | 'neutral' {
+  switch (status) {
+    case 'PAID':
+      return 'success';
+    case 'PENDING':
+      return 'warning';
+    case 'REJECTED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+export const PAYMENT_EVENT_STATUS_LABELS: Record<string, string> = {
+  RECEIVED: 'Diterima',
+  PROCESSED: 'Diproses',
+  FAILED: 'Gagal',
+  IGNORED: 'Diabaikan',
+};
+
+export function paymentEventStatusVariant(
+  status: string,
+): 'warning' | 'success' | 'danger' | 'neutral' {
+  switch (status) {
+    case 'PROCESSED':
+      return 'success';
+    case 'RECEIVED':
+      return 'warning';
+    case 'FAILED':
+      return 'danger';
+    default:
+      return 'neutral';
+  }
+}
+
+/**
+ * Peran pelaku pada riwayat status. `system` bukan "data hilang" . itu memang
+ * transisi otomatis (worker/trigger), dan dibedakan dari admin agar jejak
+ * manusia tidak tenggelam.
+ */
+export const ACTOR_ROLE_LABELS: Record<string, string> = {
+  customer: 'Pelanggan',
+  partner: 'Mitra',
+  admin: 'Admin',
+  system: 'Sistem',
+};
+
+export function actorRoleVariant(role: string): 'info' | 'success' | 'warning' | 'neutral' {
+  switch (role) {
+    case 'admin':
+      return 'warning';
+    case 'customer':
+      return 'info';
+    case 'partner':
+      return 'success';
     default:
       return 'neutral';
   }

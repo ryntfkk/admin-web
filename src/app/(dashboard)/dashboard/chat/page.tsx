@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, User } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
@@ -15,8 +16,23 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 const PER_PAGE = 20;
 
 export default function ChatPage() {
+  // useSearchParams menuntut Suspense boundary di App Router; tanpa ini build
+  // gagal dengan "missing suspense boundary with useSearchParams".
+  return (
+    <Suspense fallback={<CenteredSpinner />}>
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+function ChatPageInner() {
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  // ?room=<id> dipakai halaman detail transaksi untuk membuka langsung
+  // percakapan pelanggan↔mitra dari pesanan yang sedang ditangani.
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(
+    () => searchParams.get('room'),
+  );
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['chat-rooms', page],

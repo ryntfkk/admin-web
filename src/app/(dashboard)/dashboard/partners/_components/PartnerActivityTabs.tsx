@@ -81,7 +81,9 @@ export function PartnerOrdersTab({ partnerId }: { partnerId: string }) {
         {data.map((o) => (
           <Link
             key={o.id}
-            href={`/dashboard/orders/${o.id}`}
+            // /dashboard/orders TIDAK ADA . rute detail transaksi berada di
+            // /dashboard/transactions/[id]. Tautan lama selalu berujung 404.
+            href={`/dashboard/transactions/${o.id}`}
             className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3 transition-colors hover:border-foreground/30"
           >
             <div className="min-w-0">

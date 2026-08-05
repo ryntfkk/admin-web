@@ -279,6 +279,13 @@ export interface AuditLog {
 }
 
 // ── Orders / Transactions ───────────────────────────────────────────
+//
+// Seluruh tipe di bagian ini mengikuti DTO backend di
+// `internal/admin/mapper_orders.go`. TIDAK ADA lagi pembungkus null gaya Go
+// (`{String, Valid}`) di sini . endpoint order sudah dimigrasikan ke lapisan
+// DTO pada audit 2026-08-05, jadi nilai kosong datang sebagai `null` biasa dan
+// helper `nstr`/`ntime` tidak diperlukan.
+
 export interface OrderRow {
   id: string;
   order_number: string;
@@ -286,31 +293,173 @@ export interface OrderRow {
   agreed_price: number;
   created_at: string;
   scheduled_at: string;
+  paid_at: string | null;
+  completed_at: string | null;
+  platform_fee: number | null;
+  discount_amount: number;
+  refunded_amount: number | null;
+  cancelled_by: string | null;
+  payment_method: string | null;
+  customer_id: string;
   customer_name: string;
+  partner_id: string;
   partner_name: string;
+  partner_type: string;
+  has_dispute: boolean;
+}
+
+export interface OrdersSummary {
+  total_orders: number;
+  total_value: number;
+  total_platform_fee: number;
+  total_refunded: number;
+  completed_count: number;
+  cancelled_count: number;
+  disputed_count: number;
+}
+
+export interface OrderParty {
+  id: string;
+  name: string;
+  username: string;
+  phone: string | null;
+  email: string | null;
+  /** Hanya pada sisi mitra. */
+  partner_id?: string;
+  partner_type?: string;
+  legal_name?: string;
+  user_id?: string;
+}
+
+export interface OrderCost {
+  total_service_price: number;
+  transport_fee: number;
+  admin_fee_customer: number;
+  discount_amount: number;
+  additional_material_fee: number;
+  additional_service_fee: number;
+  agreed_price: number;
+  platform_fee: number | null;
+  partner_amount: number | null;
+  refunded_amount: number | null;
+  partner_compensation: number | null;
+}
+
+export interface OrderTimestamps {
+  created_at: string;
+  updated_at: string;
+  scheduled_at: string;
+  confirmed_at: string | null;
+  paid_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  disputed_at: string | null;
+  review_deadline_at: string | null;
+}
+
+export interface OrderItem {
+  id: string;
+  service_id: string;
+  name: string;
+  category_name: string;
+  variation_name: string | null;
+  price: number;
+  quantity: number;
+  duration: number;
+  subtotal: number;
+  service_deleted: boolean;
+}
+
+export interface OrderAdditionalFee {
+  id: string;
+  name: string;
+  fee_type: string;
+  price: number;
+  quantity: number;
+  total: number | null;
+  status: string;
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface OrderPayment {
+  id: string;
+  type: string;
+  gateway_ref_id: string | null;
+  amount: number;
+  payment_method: string | null;
+  status: string;
+  paid_at: string | null;
+  disbursed_at: string | null;
+  created_at: string;
+}
+
+export interface OrderWalletTx {
+  id: string;
+  user_id: string;
+  user_name: string;
+  type: string;
+  category: string;
+  status: string;
+  amount: number;
+  admin_fee: number;
+  description: string;
+  created_at: string;
+}
+
+export interface OrderRelations {
+  dispute_id: string | null;
+  dispute_status: string | null;
+  review_id: string | null;
+  review_rating: number | null;
+  chat_room_id: string | null;
+  note_count: number;
 }
 
 export interface OrderDetailRow {
   id: string;
   order_number: string;
   status: string;
-  agreed_price: number;
-  total_service_price: number;
-  transport_fee: number;
-  admin_fee_customer: number;
-  discount_amount: number;
-  scheduled_at: string;
+  /** Dikirim balik pada aksi ubah status (optimistic lock). */
+  version: number;
+  customer: OrderParty;
+  partner: OrderParty;
+  cost: OrderCost;
+  timestamps: OrderTimestamps;
   address: string;
-  notes: NullString;
+  address_detail: string | null;
+  notes: string | null;
+  photo_urls: string[];
+  latitude: number;
+  longitude: number;
+  promo_id: string | null;
+  promo_code: string | null;
+  cancellation_reason: string | null;
+  cancelled_by: string | null;
+  items: OrderItem[];
+  additional_fees: OrderAdditionalFee[];
+  payments: OrderPayment[];
+  wallet_flow: OrderWalletTx[];
+  relations: OrderRelations;
+}
+
+export interface OrderPaymentEvent {
+  id: string;
+  provider: string;
+  event_id: string;
+  event_type: string | null;
+  status: string;
+  processed_at: string | null;
+  error: string | null;
   created_at: string;
-  completed_at: NullTime;
-  cancellation_reason: NullString;
-  customer_id: string;
-  customer_name: string;
-  customer_phone: NullString;
-  partner_id: string;
-  partner_name: string;
-  partner_phone: NullString;
+}
+
+export interface OrderNote {
+  id: string;
+  order_id: string;
+  admin_username: string;
+  note: string;
+  created_at: string;
 }
 
 // ── Partner services (products) ─────────────────────────────────────
@@ -626,15 +775,26 @@ export interface ReportMessageRow {
 }
 
 // ── Order Status History ─────────────────────────────────────────────
+/**
+ * Riwayat transisi status sebuah order.
+ *
+ * Bentuk sebelumnya (`status`, `actor_id`, `actor_name` sebagai NullString)
+ * TIDAK PERNAH ADA di respons backend . query-nya selalu mengirim
+ * `from_status`/`to_status`, sehingga badge status di UI selalu kosong dan
+ * setiap baris tertulis "System (system)". Lihat migrasi 000074.
+ */
 export interface OrderStatusHistoryRow {
   id: string;
   order_id: string;
-  status: string;
-  actor_id: NullString;
-  actor_name: NullString;
-  actor_role: NullString;
-  reason: NullString;
+  from_status: string | null;
+  to_status: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  actor_role: string;
+  reason: string | null;
   created_at: string;
+  /** Lama order berada di status SEBELUMNYA. null pada baris pertama. */
+  duration_from_prev_seconds: number | null;
 }
 
 // ── Fase 3: kontrol penuh data ──────────────────────────────────────

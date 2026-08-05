@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Eye, EyeOff, Trash2, Star } from 'lucide-react';
 import { fetchAPI, qs } from '@/lib/api';
@@ -23,11 +24,23 @@ import { DataTable, type Column } from '@/components/ui/data-table';
 const PER_PAGE = 20;
 
 export default function ReviewsPage() {
+  // useSearchParams menuntut Suspense boundary di App Router.
+  return (
+    <Suspense fallback={<CenteredSpinner />}>
+      <ReviewsPageInner />
+    </Suspense>
+  );
+}
+
+function ReviewsPageInner() {
   const qc = useQueryClient();
+  const searchParams = useSearchParams();
   const [hidden, setHidden] = useState('');
   const [rating, setRating] = useState('');
   const [page, setPage] = useState(1);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // ?review=<id> membuka modal detail langsung . dipakai tautan "Ulasan" dari
+  // halaman detail transaksi, yang sebelumnya tidak punya tujuan sama sekali.
+  const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('review'));
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['reviews', hidden, rating, page],
